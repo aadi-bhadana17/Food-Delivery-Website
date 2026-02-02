@@ -1,0 +1,26 @@
+package com.kilgore.fooddeliveryapp.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Ingredients {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long ingredientId;
+
+    private String ingredientName;
+
+    @ManyToOne
+    private Restaurant restaurant;
+
+    @ManyToOne
+    private IngredientCategory ingredientCategory;
+
+    private boolean available;
+}
