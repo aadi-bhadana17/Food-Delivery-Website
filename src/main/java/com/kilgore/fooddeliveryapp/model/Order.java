@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -29,8 +30,9 @@ public class Order {
     private Restaurant restaurant;
 
     private BigDecimal totalPrice;
+    @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Address deliveryAddress;
@@ -38,9 +40,9 @@ public class Order {
     @OneToMany
     private List<OrderItem> orderItems;
 
+    @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
     private int totalQuantity;
-
 }
 
 /*

@@ -24,14 +24,20 @@ public class User {
     private String lastName;
     private String email;
     private String password;
+    @Enumerated(EnumType.STRING)
     private USER_ROLE role;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "customer")
     private List<Order> orders = new ArrayList<>();
 
-    @ElementCollection
-    private List<RestaurantDto> favourites = new ArrayList<>();
+    @ManyToMany
+    @JoinTable(
+            name = "user_favourites",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "restaurant_id")
+    )
+    private List<Restaurant> favourites = new ArrayList<>();
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses =  new ArrayList<>();

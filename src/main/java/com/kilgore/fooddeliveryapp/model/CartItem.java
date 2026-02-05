@@ -28,6 +28,7 @@ public class CartItem {
     private Food food;
 
     private int quantity;
+    private BigDecimal priceAtAddition;
     @OneToMany
     private List<Ingredients> ingredients;
     private BigDecimal itemTotal;

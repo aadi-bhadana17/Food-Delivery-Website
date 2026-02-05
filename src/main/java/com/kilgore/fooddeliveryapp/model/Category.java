@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"categoryName", "restaurant_id"})
+})
 public class Category {
 
     @Id

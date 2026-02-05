@@ -21,6 +21,7 @@ public class OrderItem {
     @ManyToOne
     private Food food;
     private int quantity;
+    private BigDecimal priceAtOrder;
     private BigDecimal itemTotal;
     @OneToMany
     private List<Ingredients> ingredients;

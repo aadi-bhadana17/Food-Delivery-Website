@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 
@@ -34,8 +35,8 @@ public class Restaurant {
     @Embedded
     private ContactInformation contactInformation;
 
-    private LocalDateTime openingTime;
-    private LocalDateTime closingTime;
+    private LocalTime openingTime;
+    private LocalTime closingTime;
 
     @OneToMany(mappedBy = "restaurant")
     private List<Review> reviews;

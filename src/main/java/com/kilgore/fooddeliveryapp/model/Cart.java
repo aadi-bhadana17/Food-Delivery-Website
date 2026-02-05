@@ -24,6 +24,9 @@ public class Cart {
     private List<CartItem> items;
     private int totalQuantity;
 
+    @ManyToOne
+    private Restaurant restaurant;
+
 }
 /*
 * public class Cart {
