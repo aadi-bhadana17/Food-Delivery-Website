@@ -36,7 +36,7 @@ public class AppConfig {
                 management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "RESTAURANT_OWNER")
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "RESTAURANT_OWNER")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 ).addFilterBefore(jwtTokenValidator, BasicAuthenticationFilter.class)

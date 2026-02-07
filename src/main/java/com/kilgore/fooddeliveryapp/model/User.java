@@ -1,7 +1,6 @@
 package com.kilgore.fooddeliveryapp.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.kilgore.fooddeliveryapp.dto.RestaurantDto;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,4 +40,7 @@ public class User {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses =  new ArrayList<>();
+
+    @OneToMany(mappedBy = "owner")
+    private List<Restaurant> ownedRestaurants = new ArrayList<>();
 }

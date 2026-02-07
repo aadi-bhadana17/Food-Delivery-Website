@@ -1,6 +1,5 @@
-package com.kilgore.fooddeliveryapp.dto;
+package com.kilgore.fooddeliveryapp.dto.request;
 
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +11,7 @@ import org.hibernate.validator.constraints.Length;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SignupRequestDto {
+public class SignupRequest {
     @NotBlank
     private String firstName;
     private String lastName;
