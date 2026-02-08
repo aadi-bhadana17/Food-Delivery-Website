@@ -21,7 +21,7 @@ public class Restaurant {
     private Long restaurantId;
     private String restaurantName;
 
-    @OneToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.PERSIST)
     private User owner;
 
     private String restaurantDescription;
@@ -29,8 +29,8 @@ public class Restaurant {
     @Enumerated(EnumType.STRING)
     private CuisineType cuisineType;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    private Address address;
+    @Embedded
+    private RestaurantAddress address;
 
     @Embedded
     private ContactInformation contactInformation;
@@ -55,23 +55,3 @@ public class Restaurant {
     @ManyToMany(cascade = CascadeType.PERSIST)
     private List<Food> foods;
 }
-
-/*
-* public class Restaurant {
-    id;
-    owner;
-    name;
-    description;
-    cuisineType;
-    address;
-    contactInformation;
-    openingHours;
-    reviews;
-    orders;
-    numRating;
-    images;
-    registrationDate;
-    open;
-    foods;
-}
-* */
