@@ -1,4 +1,4 @@
-# **Food Delivery App** - Full Stack (Backend hevaely)
+# **Food Delivery App** - Full Stack (Backend heavy)
 
 ## Overview
 A backend-focused academic project inspired by food delivery platforms like Swiggy. Built with Spring Boot, PostgreSQL, and JWT authentication to learn real-world backend architecture, API design, database modeling, and clean code practices. Features role-based access control (CUSTOMER, RESTAURANT_OWNER, ADMIN) with a focus on mastering backend fundamentals over feature complexity.
