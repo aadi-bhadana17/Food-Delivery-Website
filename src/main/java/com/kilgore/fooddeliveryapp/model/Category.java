@@ -17,12 +17,15 @@ public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int categoryId;
+    private Long categoryId;
     private String categoryName;
 
     @ManyToOne
     @JsonIgnore
     private Restaurant restaurant;
+
+    private String description;
+    private Integer displayOrder;
 }
 /*
 * public class Category {

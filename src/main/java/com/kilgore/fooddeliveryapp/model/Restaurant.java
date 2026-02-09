@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -54,4 +53,7 @@ public class Restaurant {
     @JsonIgnore
     @ManyToMany(cascade = CascadeType.PERSIST)
     private List<Food> foods;
+
+    @OneToMany(mappedBy = "restaurant")
+    private List<Category> categories;
 }
