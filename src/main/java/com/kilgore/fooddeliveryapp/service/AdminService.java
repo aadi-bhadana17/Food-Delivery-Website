@@ -69,12 +69,15 @@ public class AdminService {
             roleChangeRequestRepository.save(roleChangeRequest);
 
             user.setRole(roleChangeRequest.getRequestedRole());
+
+            userRepository.save(user);
         }
         else if(request.getAction().equalsIgnoreCase("reject")) {
             roleChangeRequest.setRespondedAt(LocalDateTime.now());
             roleChangeRequest.setHandledBy(admin);
             roleChangeRequest.setRequestStatus(REQUEST_STATUS.REJECTED);
             roleChangeRequestRepository.save(roleChangeRequest);
+
         }
         else {
             throw new InvalidResponseForRoleChangeRequest("Invalid action");

@@ -17,7 +17,7 @@ import java.time.LocalTime;
 public class RestaurantResponse {
     private Long restaurantId;
     private String restaurantName;
-    private User owner;
+    private OwnerResponse owner;
     private CuisineType cuisineType;
     private RestaurantAddressDto address;
     private ContactInformationDto contactInformation;

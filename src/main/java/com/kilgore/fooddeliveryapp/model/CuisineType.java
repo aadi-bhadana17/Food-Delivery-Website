@@ -5,5 +5,6 @@ public enum CuisineType {
     CHINESE,
     ITALIAN,
     MEXICAN,
-    CONTINENTAL
+    CONTINENTAL,
+    AMERICAN
 }

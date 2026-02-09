@@ -1,29 +1,51 @@
 package com.kilgore.fooddeliveryapp.controller;
 
 import com.kilgore.fooddeliveryapp.dto.request.RestaurantRequest;
+import com.kilgore.fooddeliveryapp.dto.request.RestaurantStatusRequest;
 import com.kilgore.fooddeliveryapp.dto.response.RestaurantResponse;
 import com.kilgore.fooddeliveryapp.service.RestaurantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/api")
-@PreAuthorize("hasAnyAuthority('ADMIN' , 'RESTAURANT_OWNER') ")
+@RequestMapping("/api/restaurants")
 public class RestaurantController {
 
     @Autowired
     private RestaurantService restaurantService;
 
-    @PostMapping("/restaurants")
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN' , 'RESTAURANT_OWNER') ")
     public RestaurantResponse addRestaurant(@RequestBody RestaurantRequest request) {
         RestaurantResponse restaurantResponse = restaurantService
                 .createRestaurant(request);
 
-
         return restaurantResponse;
     }
+
+    @GetMapping
+    public List<RestaurantResponse> getAllRestaurants() {
+        return restaurantService.getAllRestaurants();
+    }
+
+    @GetMapping("/{id}")
+    public RestaurantResponse getRestaurant(@PathVariable Long id) {
+        return restaurantService.getRestaurant(id);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'RESTAURANT_OWNER')")
+    public RestaurantResponse updateRestaurant(@PathVariable Long id, @RequestBody RestaurantRequest request) {
+        return  restaurantService.updateRestaurant(request, id);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'RESTAURANT_OWNER')")
+    public RestaurantResponse updateRestaurantStatus(@PathVariable Long id, @RequestBody RestaurantStatusRequest request) {
+        return restaurantService.updateRestaurantStatus(id, request);
+    }
+
 }

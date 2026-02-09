@@ -3,8 +3,11 @@ package com.kilgore.fooddeliveryapp.service;
 import com.kilgore.fooddeliveryapp.dto.request.ContactInformationDto;
 import com.kilgore.fooddeliveryapp.dto.request.RestaurantAddressDto;
 import com.kilgore.fooddeliveryapp.dto.request.RestaurantRequest;
+import com.kilgore.fooddeliveryapp.dto.request.RestaurantStatusRequest;
+import com.kilgore.fooddeliveryapp.dto.response.OwnerResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RestaurantResponse;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantAlreadyExistsException;
+import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.ContactInformation;
 import com.kilgore.fooddeliveryapp.model.Restaurant;
 import com.kilgore.fooddeliveryapp.model.RestaurantAddress;
@@ -12,12 +15,15 @@ import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Service
 public class RestaurantService {
@@ -57,10 +63,21 @@ public class RestaurantService {
 
         restaurant = restaurantRepository.save(restaurant);
 
+        return toDto(restaurant);
+    }
+
+    public List<RestaurantResponse> getAllRestaurants() {
+        return restaurantRepository.findAll()
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    private RestaurantResponse toDto(Restaurant restaurant) {
         return new RestaurantResponse(
                 restaurant.getRestaurantId(),
                 restaurant.getRestaurantName(),
-                restaurant.getOwner(),
+                mapToOwnerDto(restaurant.getOwner()),
                 restaurant.getCuisineType(),
                 mapToAddressDto(restaurant.getAddress()),
                 mapToContactInformationDto(restaurant.getContactInformation()),
@@ -69,8 +86,16 @@ public class RestaurantService {
                 restaurant.isOpen(),
                 restaurant.getRegistrationDate()
         );
-
     }
+
+    private OwnerResponse mapToOwnerDto(User owner) {
+        return new OwnerResponse(
+                owner.getUserId(),
+                owner.getFirstName() + " " + owner.getLastName(),
+                owner.getEmail()
+        );
+    }
+
 
     private RestaurantAddress mapToAddress(RestaurantAddressDto dto) {
         return new RestaurantAddress(
@@ -133,4 +158,42 @@ public class RestaurantService {
     }
 
 
+    public RestaurantResponse getRestaurant(Long id) {
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new RestaurantNotFoundException(id));
+
+        return toDto(restaurant);
+    }
+
+    public RestaurantResponse updateRestaurant(RestaurantRequest request, Long id) {
+        Restaurant restaurant  = restaurantRepository.findById(id)
+                .orElseThrow(() -> new RestaurantNotFoundException(id));
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        if(!restaurant.getOwner().getEmail().equals(email) && !authentication.getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"))) {
+            throw new AccessDeniedException("You are not authorized to modify this restaurant.");
+        }
+
+        restaurant.setRestaurantName(request.getRestaurantName());
+        restaurant.setRestaurantDescription(request.getRestaurantDescription());
+        restaurant.setAddress(mapToAddress(request.getAddress()));
+        restaurant.setCuisineType(request.getCuisineType());
+        restaurant.setOpeningTime(request.getOpeningTime());
+        restaurant.setClosingTime(request.getClosingTime());
+        restaurant.setContactInformation(mapToContactInformation(request.getContactInformation()));
+
+        restaurantRepository.save(restaurant);
+        return toDto(restaurant);
+    }
+
+    public RestaurantResponse updateRestaurantStatus(Long id, RestaurantStatusRequest request) {
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new RestaurantNotFoundException(id));
+
+        restaurant.setOpen(request.isOpen());
+        restaurantRepository.save(restaurant);
+        return toDto(restaurant);
+    }
 }
