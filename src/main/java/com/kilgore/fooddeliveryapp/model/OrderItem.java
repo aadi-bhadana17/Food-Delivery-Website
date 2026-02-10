@@ -24,13 +24,5 @@ public class OrderItem {
     private BigDecimal priceAtOrder;
     private BigDecimal itemTotal;
     @OneToMany
-    private List<Ingredients> ingredients;
+    private List<Ingredient> ingredients;
 }
-/*
-* public class OrderItem {
-    id;
-    food;
-    quantity;
-    totalPrice;
-    ingredients;
-}*/

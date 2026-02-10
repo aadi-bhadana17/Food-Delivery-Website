@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,7 +29,7 @@ public class CartItem {
     private int quantity;
     private BigDecimal priceAtAddition;
     @OneToMany
-    private List<Ingredients> ingredients;
+    private List<Ingredient> ingredients;
     private BigDecimal itemTotal;
 
 }

@@ -39,22 +39,7 @@ public class Food {
     private boolean seasonal;
 
     @ManyToMany
-    private List<Ingredients> ingredients;
+    private List<Ingredient> ingredients;
     private LocalDateTime createdAt;
 
 }
-/*
-* public class Food {
-    id;
-    name;
-    description;
-    price;
-    foodCategory;
-    images;
-    available;
-    restaurant;
-    isVegetarian;
-    isSeasonal;
-    ingredients;
-    creationDate;
-}*/

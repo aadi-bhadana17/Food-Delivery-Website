@@ -8,7 +8,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Ingredients {
+public class Ingredient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,8 +19,7 @@ public class Ingredients {
     @ManyToOne
     private Restaurant restaurant;
 
-    @ManyToOne
-    private IngredientCategory ingredientCategory;
+    private String ingredientCategory;
 
     private boolean available;
 }
