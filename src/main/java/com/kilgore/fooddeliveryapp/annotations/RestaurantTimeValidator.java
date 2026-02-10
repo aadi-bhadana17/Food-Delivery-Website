@@ -13,6 +13,9 @@ public class RestaurantTimeValidator
         if (req.getOpeningTime() == null || req.getClosingTime() == null) {
             return true; // let @NotNull handle it
         }
+        if(req.getOpeningTime().equals(req.getClosingTime())) {
+            return true; // restaurant is opening 24 hours, so we don't need to check the validation
+        }
         return req.getOpeningTime().isBefore(req.getClosingTime());
     }
 }

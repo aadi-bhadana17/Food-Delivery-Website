@@ -11,9 +11,11 @@ import org.hibernate.validator.constraints.Length;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequest {
+
     @NotBlank
     @Email
     private String email;
+
     @NotBlank
     @Length(min = 8)
     private String password;

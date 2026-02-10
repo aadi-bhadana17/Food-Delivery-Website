@@ -3,7 +3,6 @@ package com.kilgore.fooddeliveryapp.service;
 import com.kilgore.fooddeliveryapp.dto.request.SignupRequest;
 import com.kilgore.fooddeliveryapp.dto.request.LoginRequest;
 import com.kilgore.fooddeliveryapp.dto.response.LoginAuthResponse;
-import com.kilgore.fooddeliveryapp.dto.response.SignupAuthResponse;
 import com.kilgore.fooddeliveryapp.exceptions.InvalidCredentialsException;
 import com.kilgore.fooddeliveryapp.exceptions.UserAlreadyExistsException;
 import com.kilgore.fooddeliveryapp.model.USER_ROLE;
@@ -30,7 +29,7 @@ public class AuthService {
     private PasswordEncoder passwordEncoder;
 
 
-    public SignupAuthResponse registerUser(SignupRequest request) {
+    public LoginAuthResponse registerUser(SignupRequest request) {
         if(userRepository.findByEmail(request.getEmail()) != null) {
             throw new UserAlreadyExistsException();
         }
@@ -43,11 +42,11 @@ public class AuthService {
         user.setRole(USER_ROLE.CUSTOMER);
 
         userRepository.save(user);
-        return new SignupAuthResponse(
-                user.getUserId(),
+
+        return login(new LoginRequest(
                 user.getEmail(),
-                user.getRole()
-        );
+                user.getPassword()
+        ));  // once user saved to repo, it will be directed to log-in method to auto-login
     }
 
     public LoginAuthResponse login(@Valid LoginRequest request) {
@@ -73,4 +72,5 @@ public class AuthService {
                 jwtService.getExpiresAt(token)
         );
     }
+
 }
