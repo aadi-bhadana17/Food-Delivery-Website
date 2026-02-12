@@ -36,7 +36,7 @@ public class AuthService {
 
         User user = new User();
         user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.getPassword())); // encoding password - bcrypt (one-way hash)
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setRole(USER_ROLE.CUSTOMER);
@@ -45,7 +45,7 @@ public class AuthService {
 
         return login(new LoginRequest(
                 user.getEmail(),
-                user.getPassword()
+                request.getPassword()   // Because we need to pass plain password, user.getPass() is encoded
         ));  // once user saved to repo, it will be directed to log-in method to auto-login
     }
 

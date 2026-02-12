@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class IngredientResponse {
-    private Long ingredientId;
-    private String ingredientName;
-    private String ingredientCategory;
+public class AddonResponse {
+    private Long addonId;
+    private String addonName;
+    private String category;
     private RestaurantSummary restaurant;
     private boolean available;
 }

@@ -18,7 +18,7 @@ A backend-focused academic project inspired by food delivery platforms like Swig
 
 Upcoming ....
 
-🔄 Ingredient Management (IngredientCategory + Ingredients)  
+🔄 Addon Management (AddonCategory + Addons)  
 📋 Food/Menu Management (CRUD for food items)  
 🛒 Cart System  
 📦 Order Management with lifecycle tracking

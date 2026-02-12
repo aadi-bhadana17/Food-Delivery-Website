@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateIngredientRequest {
-
-    private String ingredientName;
-    private String ingredientCategory;
+public class AddonAvailableStatusRequest {
     private boolean available;
 }

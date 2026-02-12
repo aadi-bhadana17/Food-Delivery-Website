@@ -3,23 +3,25 @@ package com.kilgore.fooddeliveryapp.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Ingredient {
+public class Addon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long ingredientId;
+    private Long addonId;
 
-    private String ingredientName;
+    private String addonName;
 
     @ManyToOne
     private Restaurant restaurant;
 
-    private String ingredientCategory;
-
+    private String category;
+    private BigDecimal price;
     private boolean available;
 }

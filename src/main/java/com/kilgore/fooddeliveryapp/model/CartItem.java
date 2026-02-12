@@ -29,7 +29,7 @@ public class CartItem {
     private int quantity;
     private BigDecimal priceAtAddition;
     @OneToMany
-    private List<Ingredient> ingredients;
+    private List<Addon> addons;
     private BigDecimal itemTotal;
 
 }

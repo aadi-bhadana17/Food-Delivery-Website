@@ -24,5 +24,8 @@ public class OrderItem {
     private BigDecimal priceAtOrder;
     private BigDecimal itemTotal;
     @OneToMany
-    private List<Ingredient> ingredients;
+    private List<Addon> addons;
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 }

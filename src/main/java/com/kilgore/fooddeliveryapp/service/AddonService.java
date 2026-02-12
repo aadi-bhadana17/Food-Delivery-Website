@@ -1,14 +1,14 @@
 package com.kilgore.fooddeliveryapp.service;
 
-import com.kilgore.fooddeliveryapp.dto.request.CreateIngredientRequest;
-import com.kilgore.fooddeliveryapp.dto.request.IngredientAvailableStatusRequest;
-import com.kilgore.fooddeliveryapp.dto.response.IngredientResponse;
+import com.kilgore.fooddeliveryapp.dto.request.CreateAddonRequest;
+import com.kilgore.fooddeliveryapp.dto.request.AddonAvailableStatusRequest;
+import com.kilgore.fooddeliveryapp.dto.response.AddonResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RestaurantSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
-import com.kilgore.fooddeliveryapp.model.Ingredient;
+import com.kilgore.fooddeliveryapp.model.Addon;
 import com.kilgore.fooddeliveryapp.model.Restaurant;
-import com.kilgore.fooddeliveryapp.repository.IngredientRepository;
+import com.kilgore.fooddeliveryapp.repository.AddonRepository;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,30 +19,30 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class IngredientService {
+public class AddonService {
 
     @Autowired
     private RestaurantRepository restaurantRepository;
     @Autowired
-    private IngredientRepository ingredientRepository;
+    private AddonRepository ingredientRepository;
 
     @Transactional
-    public IngredientResponse createIngredient(Long restaurantId,
-                                               CreateIngredientRequest request) {
+    public AddonResponse createAddon(Long restaurantId,
+                                               CreateAddonRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Ingredient ingredient = new Ingredient();
+        Addon ingredient = new Addon();
         ingredient.setRestaurant(restaurant);
-        ingredient.setIngredientName(request.getIngredientName());
-        ingredient.setIngredientCategory(request.getIngredientCategory());
+        ingredient.setAddonName(request.getAddonName());
+        ingredient.setCategory(request.getCategory());
         ingredient.setAvailable(request.isAvailable());
 
-        ingredientRepository.save(ingredient);
+       ingredientRepository.save(ingredient);
 
         return createResponse(ingredient);
     }
 
-    public List<IngredientResponse> getIngredients(Long restaurantId) {
+    public List<AddonResponse> getAddons(Long restaurantId) {
         verifyOwnerAccess(restaurantId);
 
         return ingredientRepository
@@ -53,14 +53,14 @@ public class IngredientService {
     }
 
     @Transactional
-    public IngredientResponse updateIngredient(Long restaurantId, Long ingredientId,
-                                               CreateIngredientRequest request) {
+    public AddonResponse updateAddon(Long restaurantId, Long ingredientId,
+                                               CreateAddonRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Ingredient ingredient = checkIngredient(restaurant,  ingredientId);
+        Addon ingredient = checkAddon(restaurant,  ingredientId);
 
-        ingredient.setIngredientName(request.getIngredientName());
-        ingredient.setIngredientCategory(request.getIngredientCategory());
+        ingredient.setAddonName(request.getAddonName());
+        ingredient.setCategory(request.getCategory());
         ingredient.setAvailable(request.isAvailable());
 
         ingredientRepository.save(ingredient);
@@ -69,10 +69,10 @@ public class IngredientService {
     }
 
     @Transactional
-    public IngredientResponse updateAvailability(Long restaurantId, Long ingredientId,
-                                                 IngredientAvailableStatusRequest request) {
+    public AddonResponse updateAvailability(Long restaurantId, Long ingredientId,
+                                                 AddonAvailableStatusRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
-        Ingredient ingredient = checkIngredient(restaurant,  ingredientId);
+        Addon ingredient = checkAddon(restaurant,  ingredientId);
 
         ingredient.setAvailable(request.isAvailable());
 
@@ -80,9 +80,9 @@ public class IngredientService {
     }
 
     @Transactional
-    public String deleteIngredient(Long restaurantId, Long ingredientId) {
+    public String deleteAddon(Long restaurantId, Long ingredientId) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
-        Ingredient ingredient = checkIngredient(restaurant, ingredientId);
+        Addon ingredient = checkAddon(restaurant, ingredientId);
 
         ingredientRepository.delete(ingredient);
 
@@ -99,32 +99,32 @@ public class IngredientService {
                 .orElseThrow(() -> new RestaurantNotFoundException(restaurantId));
 
         if(!restaurant.getOwner().getEmail().equals(username)){
-            throw new AccessDeniedException("You are not allowed to perform this action of accessing Ingredients for this restaurant.");
+            throw new AccessDeniedException("You are not allowed to perform this action of accessing Addons for this restaurant.");
         }
         return restaurant;
     }
 
-    private IngredientResponse createResponse(Ingredient ingredient) {
+    private AddonResponse createResponse(Addon ingredient) {
 
         RestaurantSummary restaurant = new RestaurantSummary();
         restaurant.setRestaurantId(ingredient.getRestaurant().getRestaurantId());
         restaurant.setRestaurantName(ingredient.getRestaurant().getRestaurantName());
 
-        return new IngredientResponse(
-                ingredient.getIngredientId(),
-                ingredient.getIngredientName(),
-                ingredient.getIngredientCategory(),
+        return new AddonResponse(
+                ingredient.getAddonId(),
+                ingredient.getAddonName(),
+                ingredient.getCategory(),
                 restaurant,
                 ingredient.isAvailable()
         );
     }
 
-    private Ingredient checkIngredient(Restaurant restaurant, Long ingredientId) {
-        Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new EntityNotFoundException("Ingredient not found with id " + ingredientId));
+    private Addon checkAddon(Restaurant restaurant, Long ingredientId) {
+        Addon ingredient = ingredientRepository.findById(ingredientId)
+                .orElseThrow(() -> new EntityNotFoundException("Addon not found with id " + ingredientId));
 
         if(!ingredient.getRestaurant().getRestaurantId().equals(restaurant.getRestaurantId())) {
-            throw new AccessDeniedException("You are not allowed to perform this action of updating Ingredients for this restaurant.");
+            throw new AccessDeniedException("You are not allowed to perform this action of updating Addons for this restaurant.");
         }
 
         return ingredient;

@@ -38,8 +38,6 @@ public class Food {
     private boolean vegetarian;
     private boolean seasonal;
 
-    @ManyToMany
-    private List<Ingredient> ingredients;
     private LocalDateTime createdAt;
 
 }

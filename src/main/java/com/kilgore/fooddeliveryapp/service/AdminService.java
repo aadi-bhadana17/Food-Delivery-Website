@@ -9,7 +9,6 @@ import com.kilgore.fooddeliveryapp.model.RoleChangeRequest;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.RoleChangeRequestRepository;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
-import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,7 +57,7 @@ public class AdminService {
                 .orElseThrow(() -> new RequestNotFoundException(requestId));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User admin = (User) userRepository.findByEmail(authentication.getName());
+        User admin = userRepository.findByEmail(authentication.getName());
 
         if(request.getAction().equalsIgnoreCase("approve")) {
             User user = roleChangeRequest.getUser();
@@ -68,7 +67,9 @@ public class AdminService {
             roleChangeRequest.setRequestStatus(REQUEST_STATUS.APPROVED);
             roleChangeRequestRepository.save(roleChangeRequest);
 
-            user.setRole(roleChangeRequest.getRequestedRole());
+            user.setRole(roleChangeRequest.getRequestedRole()); // role has been changed and user is saved in db
+            // but u know what, if a user is currently logged in as CUSTOMER and during that time he got the authority of OWNER
+            // by ADMIN, so the current session of log-in will treat him as CUSTOMER, and OWNER from next
 
             userRepository.save(user);
         }

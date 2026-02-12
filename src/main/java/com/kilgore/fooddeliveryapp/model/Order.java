@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,7 +36,7 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     private Address deliveryAddress;
 
-    @OneToMany
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems;
 
     @Enumerated(EnumType.STRING)
@@ -45,17 +44,3 @@ public class Order {
     private int totalQuantity;
 }
 
-/*
-*   id;
-    customer;
-    restaurant;
-    totalAmount;
-    orderStatus;
-    createdAt;
-    deliveryAddress;
-    items;
-    payment;
-    totalItem;
-    totalPrice;
-}
-* */
