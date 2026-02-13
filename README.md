@@ -8,6 +8,7 @@ A backend-focused academic project inspired by food delivery platforms like Swig
 ✅ **User Management** - Signup, login, role change requests with admin approval workflow  
 ✅ **Restaurant Management** - CRUD operations with owner verification and status management  
 ✅ **Category Management** - Menu categories with owner-only access and proper validation  
+✅ **Addon Management** (AddonCategory + Addons)
 
 ## Tech Stack
 - Java 17+ with Spring Boot
@@ -18,7 +19,6 @@ A backend-focused academic project inspired by food delivery platforms like Swig
 
 Upcoming ....
 
-🔄 Addon Management (AddonCategory + Addons)  
 📋 Food/Menu Management (CRUD for food items)  
 🛒 Cart System  
 📦 Order Management with lifecycle tracking
