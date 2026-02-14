@@ -36,6 +36,7 @@ public class AddonService {
         addon.setRestaurant(restaurant);
         addon.setAddonName(request.getAddonName());
         addon.setAvailable(request.isAvailable());
+        addon.setPrice(request.getPrice());
 
 
         addonRepository.save(addon);
@@ -62,6 +63,7 @@ public class AddonService {
 
         addon.setAddonName(request.getAddonName());
         addon.setAvailable(request.isAvailable());
+        addon.setPrice(request.getPrice());
 
         addonRepository.save(addon);
 
@@ -123,7 +125,8 @@ public class AddonService {
                 addon.getAddonName(),
                 categories,
                 restaurant,
-                addon.isAvailable()
+                addon.isAvailable(),
+                addon.getPrice()
         );
     }
 

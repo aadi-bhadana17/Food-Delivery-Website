@@ -2,7 +2,9 @@ package com.kilgore.fooddeliveryapp.service;
 
 import com.kilgore.fooddeliveryapp.dto.request.CreateCategoryRequest;
 import com.kilgore.fooddeliveryapp.dto.response.CreateCategoryResponse;
+import com.kilgore.fooddeliveryapp.dto.summary.AddonSummary;
 import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
+import com.kilgore.fooddeliveryapp.exceptions.EntityAlreadyExistsException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.Category;
@@ -30,7 +32,16 @@ public class CategoryService {
                                                  CreateCategoryRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
+        if(categoryRepository
+                .findCategoryByCategoryNameAndRestaurant_RestaurantId(
+                        request.getCategoryName(),
+                        restaurantId
+                ).isPresent()) {
+            throw new EntityAlreadyExistsException("This Category already exists in this restaurant");
+        }
+
         Category category = new Category();
+
         category.setCategoryName(request.getCategoryName());
         category.setRestaurant(restaurant);
         category.setDescription(request.getDescription());
@@ -83,12 +94,20 @@ public class CategoryService {
         restaurant.setRestaurantId(category.getRestaurant().getRestaurantId());
         restaurant.setRestaurantName(category.getRestaurant().getRestaurantName());
 
+        List<AddonSummary> addons = category.getAvailableAddons().stream()
+                .map(addon -> new AddonSummary(
+                        addon.getAddonId(),
+                        addon.getAddonName()
+                ))
+                .toList();
+
         return new CreateCategoryResponse(
                 category.getCategoryId(),
                 category.getCategoryName(),
                 category.getDescription(),
                 restaurant,
-                category.getDisplayOrder()
+                category.getDisplayOrder(),
+                addons
         );
     }
 

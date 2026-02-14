@@ -1,9 +1,12 @@
 package com.kilgore.fooddeliveryapp.dto.response;
 
+import com.kilgore.fooddeliveryapp.dto.summary.AddonSummary;
 import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -14,4 +17,5 @@ public class CreateCategoryResponse {
     private String description;
     private RestaurantSummary restaurant;
     private Integer displayOrder;
+    private List<AddonSummary> addons;
 }
