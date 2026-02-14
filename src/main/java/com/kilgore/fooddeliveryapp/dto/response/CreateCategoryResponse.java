@@ -1,5 +1,6 @@
 package com.kilgore.fooddeliveryapp.dto.response;
 
+import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

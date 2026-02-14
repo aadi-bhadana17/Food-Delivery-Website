@@ -3,7 +3,8 @@ package com.kilgore.fooddeliveryapp.service;
 import com.kilgore.fooddeliveryapp.dto.request.CreateAddonRequest;
 import com.kilgore.fooddeliveryapp.dto.request.AddonAvailableStatusRequest;
 import com.kilgore.fooddeliveryapp.dto.response.AddonResponse;
-import com.kilgore.fooddeliveryapp.dto.response.RestaurantSummary;
+import com.kilgore.fooddeliveryapp.dto.summary.CategorySummary;
+import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.Addon;
@@ -24,28 +25,28 @@ public class AddonService {
     @Autowired
     private RestaurantRepository restaurantRepository;
     @Autowired
-    private AddonRepository ingredientRepository;
+    private AddonRepository addonRepository;
 
     @Transactional
     public AddonResponse createAddon(Long restaurantId,
                                                CreateAddonRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Addon ingredient = new Addon();
-        ingredient.setRestaurant(restaurant);
-        ingredient.setAddonName(request.getAddonName());
-        ingredient.setCategory(request.getCategory());
-        ingredient.setAvailable(request.isAvailable());
+        Addon addon = new Addon();
+        addon.setRestaurant(restaurant);
+        addon.setAddonName(request.getAddonName());
+        addon.setAvailable(request.isAvailable());
 
-       ingredientRepository.save(ingredient);
 
-        return createResponse(ingredient);
+        addonRepository.save(addon);
+
+        return createResponse(addon);
     }
 
     public List<AddonResponse> getAddons(Long restaurantId) {
         verifyOwnerAccess(restaurantId);
 
-        return ingredientRepository
+        return addonRepository
                 .findAllByRestaurant_RestaurantId(restaurantId)
                 .stream()
                 .map(this::createResponse)
@@ -53,38 +54,37 @@ public class AddonService {
     }
 
     @Transactional
-    public AddonResponse updateAddon(Long restaurantId, Long ingredientId,
+    public AddonResponse updateAddon(Long restaurantId, Long addonId,
                                                CreateAddonRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Addon ingredient = checkAddon(restaurant,  ingredientId);
+        Addon addon = checkAddon(restaurant,  addonId);
 
-        ingredient.setAddonName(request.getAddonName());
-        ingredient.setCategory(request.getCategory());
-        ingredient.setAvailable(request.isAvailable());
+        addon.setAddonName(request.getAddonName());
+        addon.setAvailable(request.isAvailable());
 
-        ingredientRepository.save(ingredient);
+        addonRepository.save(addon);
 
-        return createResponse(ingredient);
+        return createResponse(addon);
     }
 
     @Transactional
-    public AddonResponse updateAvailability(Long restaurantId, Long ingredientId,
+    public AddonResponse updateAvailability(Long restaurantId, Long addonId,
                                                  AddonAvailableStatusRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
-        Addon ingredient = checkAddon(restaurant,  ingredientId);
+        Addon addon = checkAddon(restaurant,  addonId);
 
-        ingredient.setAvailable(request.isAvailable());
+        addon.setAvailable(request.isAvailable());
 
-        return createResponse(ingredient);
+        return createResponse(addon);
     }
 
     @Transactional
-    public String deleteAddon(Long restaurantId, Long ingredientId) {
+    public String deleteAddon(Long restaurantId, Long addonId) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
-        Addon ingredient = checkAddon(restaurant, ingredientId);
+        Addon addon = checkAddon(restaurant, addonId);
 
-        ingredientRepository.delete(ingredient);
+        addonRepository.delete(addon);
 
         return "deleted";
     }
@@ -104,30 +104,37 @@ public class AddonService {
         return restaurant;
     }
 
-    private AddonResponse createResponse(Addon ingredient) {
+    private AddonResponse createResponse(Addon addon) {
 
         RestaurantSummary restaurant = new RestaurantSummary();
-        restaurant.setRestaurantId(ingredient.getRestaurant().getRestaurantId());
-        restaurant.setRestaurantName(ingredient.getRestaurant().getRestaurantName());
+        restaurant.setRestaurantId(addon.getRestaurant().getRestaurantId());
+        restaurant.setRestaurantName(addon.getRestaurant().getRestaurantName());
+
+        List<CategorySummary> categories = addon.getCategories().stream()
+                .map(category -> new CategorySummary(
+                        category.getCategoryId(),
+                        category.getCategoryName()
+                ))
+                .toList();
+
 
         return new AddonResponse(
-                ingredient.getAddonId(),
-                ingredient.getAddonName(),
-                ingredient.getCategory(),
+                addon.getAddonId(),
+                addon.getAddonName(),
+                categories,
                 restaurant,
-                ingredient.isAvailable()
+                addon.isAvailable()
         );
     }
 
-    private Addon checkAddon(Restaurant restaurant, Long ingredientId) {
-        Addon ingredient = ingredientRepository.findById(ingredientId)
-                .orElseThrow(() -> new EntityNotFoundException("Addon not found with id " + ingredientId));
+    private Addon checkAddon(Restaurant restaurant, Long addonId) {
+        Addon addon = addonRepository.findById(addonId)
+                .orElseThrow(() -> new EntityNotFoundException("Addon not found with id " + addonId));
 
-        if(!ingredient.getRestaurant().getRestaurantId().equals(restaurant.getRestaurantId())) {
+        if(!addon.getRestaurant().getRestaurantId().equals(restaurant.getRestaurantId())) {
             throw new AccessDeniedException("You are not allowed to perform this action of updating Addons for this restaurant.");
         }
 
-        return ingredient;
+        return addon;
     }
-
 }

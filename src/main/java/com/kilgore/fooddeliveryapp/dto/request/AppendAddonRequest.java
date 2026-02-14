@@ -9,10 +9,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreateAddonRequest {
+public class AppendAddonRequest {
 
-    private String addonName;
-    private String category;
-    private boolean available;
-    private List<Long> categoryIds;
+    private List<Long> addonIds;
 }

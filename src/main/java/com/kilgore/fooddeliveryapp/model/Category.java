@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Data
@@ -26,10 +30,23 @@ public class Category {
 
     private String description;
     private Integer displayOrder;
+
+    @EqualsAndHashCode.Include
+    @ManyToMany
+    @JoinTable(
+            name = "addons_for_categories",
+            joinColumns = @JoinColumn(name = "category_id"),
+            inverseJoinColumns = @JoinColumn(name = "addon_id")
+    )
+    private Set<Addon> availableAddons =  new HashSet<>();
+
+    public void addAddon(Addon addon) {
+        this.availableAddons.add(addon);
+        addon.getCategories().add(this);
+    }
+    public void removeAddon(Addon addon) {
+        this.availableAddons.remove(addon);
+        addon.getCategories().remove(this);
+    }
 }
-/*
-* public class Category {
-    id;
-    name;
-    restaurant;
-}*/
+

@@ -11,41 +11,41 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/restaurants/{restaurantId}/ingredients")
+@RequestMapping("/api/restaurants/{restaurantId}/addons")
 @PreAuthorize("hasAnyAuthority('RESTAURANT_OWNER')")
 public class AddonController {
 
     @Autowired
-    private AddonService ingredientService;
+    private AddonService addonService;
 
     @PostMapping
     public AddonResponse createAddon(@PathVariable Long restaurantId,
                                                @RequestBody CreateAddonRequest request) {
-        return ingredientService.createAddon(restaurantId, request);
+        return addonService.createAddon(restaurantId, request);
     }
 
     @GetMapping
     public List<AddonResponse> getAddons(@PathVariable Long restaurantId) {
-        return ingredientService.getAddons(restaurantId);
+        return addonService.getAddons(restaurantId);
     }
 
-    @PutMapping("/{ingredientId}")
+    @PutMapping("/{addonId}")
     public AddonResponse updateAddon(@PathVariable Long restaurantId,
-                                               @PathVariable Long ingredientId,
+                                               @PathVariable Long addonId,
                                                @RequestBody CreateAddonRequest request) {
-        return ingredientService.updateAddon(restaurantId, ingredientId, request);
+        return addonService.updateAddon(restaurantId, addonId, request);
     }
 
-    @PatchMapping("/{ingredientId}")
+    @PatchMapping("/{addonId}")
     public AddonResponse updateAvailability(@PathVariable Long restaurantId,
-                                                 @PathVariable Long ingredientId,
+                                                 @PathVariable Long addonId,
                                                  @RequestBody AddonAvailableStatusRequest request) {
-        return ingredientService.updateAvailability(restaurantId, ingredientId, request);
+        return addonService.updateAvailability(restaurantId, addonId, request);
     }
 
-    @DeleteMapping("/{ingredientId}")
+    @DeleteMapping("/{addonId}")
     public String deleteAddon(@PathVariable Long restaurantId,
-                                               @PathVariable Long ingredientId) {
-        return ingredientService.deleteAddon(restaurantId, ingredientId);
+                                               @PathVariable Long addonId) {
+        return addonService.deleteAddon(restaurantId, addonId);
     }
 }

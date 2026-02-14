@@ -2,7 +2,7 @@ package com.kilgore.fooddeliveryapp.service;
 
 import com.kilgore.fooddeliveryapp.dto.request.CreateCategoryRequest;
 import com.kilgore.fooddeliveryapp.dto.response.CreateCategoryResponse;
-import com.kilgore.fooddeliveryapp.dto.response.RestaurantSummary;
+import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.Category;
