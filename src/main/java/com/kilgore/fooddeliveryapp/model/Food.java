@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,20 +24,19 @@ public class Food {
     private BigDecimal foodPrice;
 
     @ManyToOne
+    @JsonIgnore
+    private Restaurant restaurant;
+
+    @ManyToOne
     private Category foodCategory;
 
     @Column(length = 1000)
     @ElementCollection(fetch = FetchType.EAGER)
-    private List<String> images;
+    private List<String> images = new ArrayList<>();
 
-    private boolean available;
-
-    @ManyToOne
-    @JsonIgnore
-    private Restaurant restaurant;
 
     private boolean vegetarian;
-    private boolean seasonal;
+    private boolean available;
 
     private LocalDateTime createdAt;
 

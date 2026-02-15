@@ -68,7 +68,7 @@ public class CategoryService {
                                                  CreateCategoryRequest request) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Category category = checkCategory(restaurant, categoryId);
+        Category category = verifyCategory(restaurant, categoryId);
 
         category.setCategoryName(request.getCategoryName());
         category.setDescription(request.getDescription());
@@ -82,7 +82,7 @@ public class CategoryService {
     public void deleteCategory(Long restaurantId, Long categoryId) {
         Restaurant restaurant = verifyOwnerAccess(restaurantId);
 
-        Category category = checkCategory(restaurant, categoryId);
+        Category category = verifyCategory(restaurant, categoryId);
         categoryRepository.delete(category);
     }
 
@@ -124,7 +124,7 @@ public class CategoryService {
         return restaurant;
     }
 
-    private Category checkCategory(Restaurant restaurant, Long categoryId) {
+    private Category verifyCategory(Restaurant restaurant, Long categoryId) {
         Category category =  categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException("Category not found"));
 
