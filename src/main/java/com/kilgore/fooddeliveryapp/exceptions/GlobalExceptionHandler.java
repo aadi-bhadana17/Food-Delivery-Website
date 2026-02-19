@@ -70,4 +70,18 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(EntityMisMatchAssociationException.class)
+    public ResponseEntity<String> handleEntityMisMatchAssociation(EntityMisMatchAssociationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(EntityUnavailableException.class)
+    public ResponseEntity<String> handleEntityUnavailable(EntityUnavailableException ex) {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ex.getMessage());
+    }
+
 }

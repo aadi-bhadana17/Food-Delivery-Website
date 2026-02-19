@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +88,10 @@ public class FoodService {
 
         Food food = foodRepository.findById(foodId)
                 .orElseThrow(() -> new EntityNotFoundException("Food not found"));
+
+        if(isFoodNameDuplicated(restaurantId, foodId, request.getFoodName())) {
+            throw new EntityAlreadyExistsException("Food with this name already exists");
+        }
 
         food.setFoodName(request.getFoodName());
         food.setFoodDescription(request.getFoodDescription());
@@ -178,6 +183,13 @@ public class FoodService {
                 request.getFoodName(),
                 restaurantId
         ).isPresent();
+    }
+
+    private boolean isFoodNameDuplicated(Long restaurantId, Long foodId, String newFoodName) {
+        Optional<Food> food = foodRepository.findByFoodNameAndRestaurant_RestaurantId(newFoodName,  restaurantId);
+
+        return food.filter(value -> !value.getFoodId().equals(foodId)).isPresent();
+        // if the food we are getting from param, and food from repo here, have same ID then we are fine not otherwise
     }
 
 }

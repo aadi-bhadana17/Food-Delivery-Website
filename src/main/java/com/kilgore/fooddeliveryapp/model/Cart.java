@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -18,11 +20,13 @@ public class Cart {
     private Long cartId;
 
     @ManyToOne
-    private User customer;
+    private User user;
 
     @OneToMany(mappedBy = "cart",  cascade = CascadeType.ALL,  fetch = FetchType.EAGER, orphanRemoval = true)
-    private List<CartItem> items;
+    private List<CartItem> items = new ArrayList<>();
+
     private int totalQuantity;
+    private BigDecimal totalPrice;
 
     @ManyToOne
     private Restaurant restaurant;
