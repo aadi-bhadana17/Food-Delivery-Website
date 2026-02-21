@@ -1,6 +1,7 @@
 package com.kilgore.fooddeliveryapp.service;
 
 import com.kilgore.fooddeliveryapp.dto.request.AddToCartRequest;
+import com.kilgore.fooddeliveryapp.dto.request.UpdateCartItemRequest;
 import com.kilgore.fooddeliveryapp.dto.response.CartResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.AddonSummary;
 import com.kilgore.fooddeliveryapp.dto.summary.CartItemSummary;
@@ -10,11 +11,9 @@ import com.kilgore.fooddeliveryapp.exceptions.EntityMisMatchAssociationException
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityUnavailableException;
 import com.kilgore.fooddeliveryapp.model.*;
-import com.kilgore.fooddeliveryapp.repository.AddonRepository;
-import com.kilgore.fooddeliveryapp.repository.CartRepository;
-import com.kilgore.fooddeliveryapp.repository.FoodRepository;
-import com.kilgore.fooddeliveryapp.repository.UserRepository;
+import com.kilgore.fooddeliveryapp.repository.*;
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,14 +32,16 @@ public class CartService {
     private final UserRepository userRepository;
     private final FoodRepository foodRepository;
     private final AddonRepository addonRepository;
+    private final CartItemRepository cartItemRepository;
 
     private final PricingService pricingService;
 
-    public CartService(CartRepository cartRepository, UserRepository userRepository, FoodRepository foodRepository, AddonRepository addonRepository, PricingService pricingService) {
+    public CartService(CartRepository cartRepository, UserRepository userRepository, FoodRepository foodRepository, AddonRepository addonRepository, CartItemRepository cartItemRepository, PricingService pricingService) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.foodRepository = foodRepository;
         this.addonRepository = addonRepository;
+        this.cartItemRepository = cartItemRepository;
         this.pricingService = pricingService;
     }
 
@@ -94,6 +95,54 @@ public class CartService {
 
         updateCartTotal(cart);
         return createCartResponse(cart, priceUpdated);
+    }
+
+    @Transactional
+    public CartResponse updateCart(Long cartItemId, UpdateCartItemRequest request) {
+
+        Cart cart = verifyCart();
+        CartItem item = verifyCartItem(cartItemId, cart);
+
+        item.setQuantity(request.getQuantity());
+        item.setItemTotal(pricingService.calculateItemTotal(item));
+
+        updateCartTotal(cart);
+        cartItemRepository.save(item);
+
+        return createCartResponse(cart, true);
+    }
+
+    @Transactional
+    public CartResponse removeCartItem(Long cartItemId) {
+        Cart cart = verifyCart();
+        CartItem item = verifyCartItem(cartItemId, cart);
+
+        cart.getItems().remove(item);
+        updateCartTotal(cart);
+
+        return createCartResponse(cart, true);
+    }
+
+    @Transactional
+    public String clearCart() {
+        Cart cart = verifyCart();
+
+        cart.getItems().clear();
+        updateCartTotal(cart);
+
+        return "Cart has been cleared";
+    }
+
+    private CartItem  verifyCartItem(Long cartItemId, Cart cart) {
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new EntityNotFoundException("No item found with id " + cartItemId));
+
+        if(!item.getCart().equals(cart)){
+            throw new AccessDeniedException("You are not allowed to update this cart item, " +
+                    "because this cart doesn't belongs to you");
+        }
+
+        return item;
     }
 
     private void updateCartTotal(Cart cart) {
@@ -155,6 +204,7 @@ public class CartService {
 
             cartItem.setQuantity(request.getQuantity() + cartItem.getQuantity());
             cartItem.setItemTotal(pricingService.calculateItemTotal(cartItem));
+
         }
         else {
             CartItem cartItem = new CartItem();
@@ -250,7 +300,7 @@ public class CartService {
                 .map(item -> createCartItemSummary(item, item.getAddons()))
                 .toList();
 
-        String message = priceUpdated ? "Some prices have been updated based on current price in restaurant" : null;
+        String message = priceUpdated ? "Some prices have been updated based on current price in restaurant or due to change in quantity" : null;
 
         return new CartResponse(
                 cart.getCartId(),
@@ -274,6 +324,7 @@ public class CartService {
         List<AddonSummary> addonSummaries = createListOfAddonsSummary(addons);
 
         return new CartItemSummary(
+                item.getCartItemId(),
                 item.getFood().getFoodId(),
                 item.getFood().getFoodName(),
                 item.getQuantity(),
@@ -281,6 +332,7 @@ public class CartService {
                 item.getItemTotal()
         );
     }
+
     private List<AddonSummary> createListOfAddonsSummary(List<Addon> addons) {
         return addons.stream()
                 .map(this::createAddonSummary)
@@ -293,4 +345,5 @@ public class CartService {
                 addon.getAddonName()
         );
     }
+
 }

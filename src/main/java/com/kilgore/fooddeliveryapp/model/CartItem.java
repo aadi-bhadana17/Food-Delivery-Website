@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -18,7 +19,7 @@ public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int cartItemId;
+    private Long cartItemId;
 
     @ManyToOne
     @JsonIgnore
@@ -29,8 +30,14 @@ public class CartItem {
 
     private int quantity;
     private BigDecimal priceAtAddition;
-    @OneToMany
-    private List<Addon> addons;
+    @ManyToMany
+    @JoinTable(
+            name = "cart_item_addons",
+            joinColumns = @JoinColumn(name = "cart_item_id"),
+            inverseJoinColumns = @JoinColumn(name = "addon_id")
+    )
+    private List<Addon> addons = new ArrayList<>();
+
     private BigDecimal itemTotal;
 
     private LocalDateTime addedTime;

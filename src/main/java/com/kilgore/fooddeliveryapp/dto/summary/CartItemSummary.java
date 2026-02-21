@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartItemSummary {
+    private Long cartItemId;
     private Long foodId;
     private String foodName;
 

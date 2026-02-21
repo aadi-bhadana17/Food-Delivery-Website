@@ -1,6 +1,7 @@
 package com.kilgore.fooddeliveryapp.controller;
 
 import com.kilgore.fooddeliveryapp.dto.request.AddToCartRequest;
+import com.kilgore.fooddeliveryapp.dto.request.UpdateCartItemRequest;
 import com.kilgore.fooddeliveryapp.dto.response.CartResponse;
 import com.kilgore.fooddeliveryapp.service.CartService;
 import org.springframework.web.bind.annotation.*;
@@ -23,5 +24,21 @@ public class CartController {
     @GetMapping()
     public CartResponse getCart() {
         return cartService.getCart();
+    }
+
+    @PutMapping("/{cartItemId}")
+    public CartResponse updateQuantity(@PathVariable Long cartItemId,
+                                       @RequestBody UpdateCartItemRequest request) {
+        return cartService.updateCart(cartItemId, request);
+    }
+
+    @DeleteMapping("/{cartItemId}")
+    public CartResponse deleteCartItem(@PathVariable Long cartItemId) {
+        return cartService.removeCartItem(cartItemId);
+    }
+
+    @DeleteMapping()
+    public String deleteCart() {
+        return cartService.clearCart();
     }
 }
