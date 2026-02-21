@@ -33,10 +33,11 @@ public class CartService {
     private final FoodRepository foodRepository;
     private final AddonRepository addonRepository;
     private final CartItemRepository cartItemRepository;
-
     private final PricingService pricingService;
 
-    public CartService(CartRepository cartRepository, UserRepository userRepository, FoodRepository foodRepository, AddonRepository addonRepository, CartItemRepository cartItemRepository, PricingService pricingService) {
+    public CartService(CartRepository cartRepository, UserRepository userRepository,
+                       FoodRepository foodRepository, AddonRepository addonRepository,
+                       CartItemRepository cartItemRepository, PricingService pricingService) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.foodRepository = foodRepository;
@@ -44,6 +45,9 @@ public class CartService {
         this.cartItemRepository = cartItemRepository;
         this.pricingService = pricingService;
     }
+
+
+    // -------------------------------------------------------- CART OPERATIONS ------------------------------------------------------------------------
 
 
     @Transactional
@@ -89,11 +93,17 @@ public class CartService {
 
     public CartResponse getCart() {
 
-        Cart cart = verifyCart();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
 
-        boolean priceUpdated = refreshExpiredPrices(cart);
+        Cart cart = cartRepository.findByUser(user);
 
-        updateCartTotal(cart);
+        boolean priceUpdated = false;
+        if (cart != null) {
+            priceUpdated = refreshExpiredPrices(cart);
+            updateCartTotal(cart);
+        }
+
         return createCartResponse(cart, priceUpdated);
     }
 
@@ -133,6 +143,17 @@ public class CartService {
         return "Cart has been cleared";
     }
 
+
+    // ------------------------------------------------------------- VALIDATION -------------------------------------------------------------------------
+
+
+    private String authenticateUser() {
+        Authentication authentication = SecurityContextHolder.getContext()
+                .getAuthentication();
+
+        return authentication.getName();
+    }
+
     private CartItem  verifyCartItem(Long cartItemId, Cart cart) {
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new EntityNotFoundException("No item found with id " + cartItemId));
@@ -143,35 +164,6 @@ public class CartService {
         }
 
         return item;
-    }
-
-    private void updateCartTotal(Cart cart) {
-        cart.setTotalPrice(pricingService.calculateCartTotal(cart));
-        cart.setTotalQuantity(calculateTotalQuantity(cart));
-        cartRepository.save(cart);
-    }
-
-    private boolean refreshExpiredPrices(Cart cart) {
-        boolean anyPriceUpdated = false;
-
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
-
-        for(CartItem item : cart.getItems()){
-            if(item.getAddedTime().isBefore(oneHourAgo)){
-                BigDecimal newPrice = pricingService.calculateCurrentPrice(
-                        item.getFood(),
-                        item.getAddons());
-
-                if(!item.getPriceAtAddition().equals(newPrice)){
-                    item.setPriceAtAddition(newPrice);
-                    item.setItemTotal(newPrice.multiply
-                            (BigDecimal.valueOf(item.getQuantity())));
-                    item.setAddedTime(LocalDateTime.now());
-                    anyPriceUpdated = true;
-                }
-            }
-        }
-        return anyPriceUpdated;
     }
 
     private Cart verifyCart() {
@@ -189,40 +181,70 @@ public class CartService {
         return cart;
     }
 
-    private void addOrMergeCartItem(Cart cart, Food food, List<Addon> addonList, AddToCartRequest request) {
 
-        BigDecimal currentPrice = pricingService.calculateCurrentPrice(food, addonList);
+    // -------------------------------------------------------------- MAPPING ------------------------------------------------------------------------------
 
-        Optional<CartItem> existingCartItem = cart.getItems().stream()
-                .filter(item -> item.getFood().equals(food))
-                .filter(item -> item.getPriceAtAddition().equals(currentPrice))
-                .filter(item -> haveSameAddons(item.getAddons(), addonList))
-                .findFirst();
 
-        if (existingCartItem.isPresent()) {
-            CartItem cartItem = existingCartItem.get();
+    private CartResponse createCartResponse(Cart cart, boolean priceUpdated) {
 
-            cartItem.setQuantity(request.getQuantity() + cartItem.getQuantity());
-            cartItem.setItemTotal(pricingService.calculateItemTotal(cartItem));
+        if(cart == null) return new CartResponse(null, null, null,
+                0, BigDecimal.ZERO, null, "Your cart is empty");
 
-        }
-        else {
-            CartItem cartItem = new CartItem();
-            cartItem.setCart(cart);
-            cartItem.setFood(food);
-            cartItem.setQuantity(request.getQuantity());
-            cartItem.setAddons(addonList);
-            cartItem.setPriceAtAddition(pricingService.calculatePriceAtAddition(cartItem));
-            cartItem.setItemTotal(pricingService.calculateItemTotal(cartItem));
-            cartItem.setAddedTime(LocalDateTime.now());
+        UserSummary user = new UserSummary(
+                cart.getUser().getUserId(),
+                cart.getUser().getFirstName() + " " +cart.getUser().getLastName()
+        );
 
-            cart.getItems().add(cartItem);
-        }
+        RestaurantSummary restaurant = cart.getRestaurant() != null ?
+                new RestaurantSummary(cart.getRestaurant().getRestaurantId(), cart.getRestaurant().getRestaurantName()) : new RestaurantSummary();
 
-        cart.setTotalPrice(pricingService.calculateCartTotal(cart));
-        cart.setTotalQuantity(calculateTotalQuantity(cart));
-        cartRepository.save(cart);
+        List<CartItemSummary> cartItems = cart.getItems().stream()
+                .map(item -> createCartItemSummary(item, item.getAddons()))
+                .toList();
+
+        String message = priceUpdated ? "Some prices have been updated based on current price in restaurant or due to change in quantity" : null;
+
+        return new CartResponse(
+                cart.getCartId(),
+                user,
+                cartItems,
+                cart.getTotalQuantity(),
+                cart.getTotalPrice(),
+                restaurant,
+                message
+        );
     }
+
+    private CartItemSummary createCartItemSummary(CartItem item, List<Addon> addons) {
+
+        List<AddonSummary> addonSummaries = createListOfAddonsSummary(addons);
+
+        return new CartItemSummary(
+                item.getCartItemId(),
+                item.getFood().getFoodId(),
+                item.getFood().getFoodName(),
+                item.getQuantity(),
+                addonSummaries,
+                item.getItemTotal()
+        );
+    }
+
+    private List<AddonSummary> createListOfAddonsSummary(List<Addon> addons) {
+        return addons.stream()
+                .map(this::createAddonSummary)
+                .toList();
+    }
+
+    private AddonSummary  createAddonSummary(Addon addon) {
+        return new AddonSummary(
+                addon.getAddonId(),
+                addon.getAddonName()
+        );
+    }
+
+
+    // ------------------------------------------------------------- HELPERS ------------------------------------------------------------------------------
+
 
     private boolean haveSameAddons(List<Addon> list1,  List<Addon> list2) {
         if(list1.size() != list2.size()) return false;
@@ -277,73 +299,76 @@ public class CartService {
         return addon;
     }
 
-    private String authenticateUser() {
-        Authentication authentication = SecurityContextHolder.getContext()
-                .getAuthentication();
-
-        return authentication.getName();
+    private void updateCartTotal(Cart cart) {
+        cart.setTotalPrice(pricingService.calculateCartTotal(cart));
+        cart.setTotalQuantity(calculateTotalQuantity(cart));
+        cartRepository.save(cart);
     }
 
-    private CartResponse createCartResponse(Cart cart, boolean priceUpdated) {
+    private boolean refreshExpiredPrices(Cart cart) {
+        boolean anyPriceUpdated = false;
 
-        UserSummary user = new UserSummary(
-                cart.getUser().getUserId(),
-                cart.getUser().getFirstName() + " " +cart.getUser().getLastName()
-        );
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
 
-        RestaurantSummary restaurant = new RestaurantSummary(
-                cart.getRestaurant().getRestaurantId(),
-                cart.getRestaurant().getRestaurantName()
-        );
+        for(CartItem item : cart.getItems()){
+            if(item.getAddedTime().isBefore(oneHourAgo)){
+                BigDecimal newPrice = pricingService.calculateCurrentPrice(
+                        item.getFood(),
+                        item.getAddons());
 
-        List<CartItemSummary> cartItems = cart.getItems().stream()
-                .map(item -> createCartItemSummary(item, item.getAddons()))
-                .toList();
+                if(!item.getPriceAtAddition().equals(newPrice)){
+                    item.setPriceAtAddition(newPrice);
+                    item.setItemTotal(newPrice.multiply
+                            (BigDecimal.valueOf(item.getQuantity())));
+                    item.setAddedTime(LocalDateTime.now());
+                    anyPriceUpdated = true;
 
-        String message = priceUpdated ? "Some prices have been updated based on current price in restaurant or due to change in quantity" : null;
+                    cartItemRepository.save(item);
+                }
+            }
+        }
+        return anyPriceUpdated;
+    }
 
-        return new CartResponse(
-                cart.getCartId(),
-                user,
-                cartItems,
-                cart.getTotalQuantity(),
-                cart.getTotalPrice(),
-                restaurant,
-                message
-        );
+    private void addOrMergeCartItem(Cart cart, Food food, List<Addon> addonList, AddToCartRequest request) {
+
+        BigDecimal currentPrice = pricingService.calculateCurrentPrice(food, addonList);
+
+        Optional<CartItem> existingCartItem = cart.getItems().stream()
+                .filter(item -> item.getFood().equals(food))
+                .filter(item -> item.getPriceAtAddition().equals(currentPrice))
+                .filter(item -> haveSameAddons(item.getAddons(), addonList))
+                .findFirst();
+
+        if (existingCartItem.isPresent()) {
+            CartItem cartItem = existingCartItem.get();
+
+            cartItem.setQuantity(request.getQuantity() + cartItem.getQuantity());
+            cartItem.setItemTotal(pricingService.calculateItemTotal(cartItem));
+
+        }
+        else {
+            CartItem cartItem = new CartItem();
+            cartItem.setCart(cart);
+            cartItem.setFood(food);
+            cartItem.setQuantity(request.getQuantity());
+            cartItem.setAddons(addonList);
+            cartItem.setPriceAtAddition(pricingService.calculatePriceAtAddition(cartItem));
+            cartItem.setItemTotal(pricingService.calculateItemTotal(cartItem));
+            cartItem.setAddedTime(LocalDateTime.now());
+
+            cart.getItems().add(cartItem);
+        }
+
+        cart.setTotalPrice(pricingService.calculateCartTotal(cart));
+        cart.setTotalQuantity(calculateTotalQuantity(cart));
+        cartRepository.save(cart);
     }
 
     private int calculateTotalQuantity(Cart  cart) {
         return cart.getItems().stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();
-    }
-
-    private CartItemSummary createCartItemSummary(CartItem item, List<Addon> addons) {
-
-        List<AddonSummary> addonSummaries = createListOfAddonsSummary(addons);
-
-        return new CartItemSummary(
-                item.getCartItemId(),
-                item.getFood().getFoodId(),
-                item.getFood().getFoodName(),
-                item.getQuantity(),
-                addonSummaries,
-                item.getItemTotal()
-        );
-    }
-
-    private List<AddonSummary> createListOfAddonsSummary(List<Addon> addons) {
-        return addons.stream()
-                .map(this::createAddonSummary)
-                .toList();
-    }
-
-    private AddonSummary  createAddonSummary(Addon addon) {
-        return new AddonSummary(
-                addon.getAddonId(),
-                addon.getAddonName()
-        );
     }
 
 }
