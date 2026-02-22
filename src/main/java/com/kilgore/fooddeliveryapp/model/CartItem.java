@@ -43,12 +43,3 @@ public class CartItem {
     private LocalDateTime addedTime;
 
 }
-/*
-* public class CartItem {
-    id;
-    cart;
-    food;
-    quantity;
-    ingredients;
-    totalPrice;
-}*/

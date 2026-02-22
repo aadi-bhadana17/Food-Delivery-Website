@@ -1,0 +1,288 @@
+package com.kilgore.fooddeliveryapp.service;
+
+import com.kilgore.fooddeliveryapp.dto.request.PlaceOrderRequest;
+import com.kilgore.fooddeliveryapp.dto.request.UpdateOrderStatusRequest;
+import com.kilgore.fooddeliveryapp.dto.response.OrderResponse;
+import com.kilgore.fooddeliveryapp.dto.summary.*;
+import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
+import com.kilgore.fooddeliveryapp.exceptions.EntityUnavailableException;
+import com.kilgore.fooddeliveryapp.model.*;
+import com.kilgore.fooddeliveryapp.repository.*;
+import jakarta.transaction.Transactional;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final CartRepository cartRepository;
+    private final AddressRepository addressRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final UserRepository userRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final PricingService pricingService;
+
+    public OrderService(OrderRepository orderRepository, CartRepository cartRepository,
+                        AddressRepository addressRepository, OrderItemRepository orderItemRepository,
+                        UserRepository userRepository, RestaurantRepository restaurantRepository, PricingService pricingService) {
+        this.orderRepository = orderRepository;
+        this.cartRepository = cartRepository;
+        this.addressRepository = addressRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.userRepository = userRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.pricingService = pricingService;
+    }
+
+    @Transactional
+    public OrderResponse placeOrder(PlaceOrderRequest request) {
+        Cart cart = fetchCart();
+
+        Address address = addressRepository.findById(request.getAddressId())
+                .orElseThrow(() -> new EntityNotFoundException("Address not found"));
+
+        String message = updateCartPrice(cart) ? "Some prices of cart has been updated according to current prices in restaurant"
+                : "Happy meal :)";
+
+        List<OrderItem> orderItems = createOrderItems(cart);
+
+        Order order = new Order();
+
+        order.setUser(cart.getUser());
+        order.setRestaurant(cart.getRestaurant());
+        order.setTotalPrice(cart.getTotalPrice());
+        order.setOrderStatus(OrderStatus.CREATED);
+        order.setCreatedAt(LocalDateTime.now());
+        order.setDeliveryAddress(address);
+        order.setOrderItems(orderItems);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+        order.setTotalQuantity(cart.getTotalQuantity());
+        orderRepository.save(order);
+
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        return createOrderResponse(order, message);
+    }
+
+    private List<OrderItem> createOrderItems(Cart cart) {
+        return cart.getItems().stream()
+                .map(this::createOrderItem)
+                .toList();
+    }
+
+    private OrderItem createOrderItem(CartItem cartItem) {
+
+        validateCartItems(cartItem);
+
+        OrderItem orderItem = new OrderItem();
+
+        orderItem.setFood(cartItem.getFood());
+        orderItem.setQuantity(cartItem.getQuantity());
+        orderItem.setPriceAtOrder(cartItem.getPriceAtAddition());
+        orderItem.setItemTotal(cartItem.getItemTotal());
+        orderItem.setAddons(cartItem.getAddons());
+
+        orderItemRepository.save(orderItem);
+
+        return orderItem;
+    }
+
+    private void validateCartItems(CartItem cartItem) {
+        if(!cartItem.getFood().isAvailable()) {
+            throw new EntityUnavailableException("One or more Foods from cart is not available at this time");
+        }
+
+        if(cartItem.getAddons().stream()
+                .anyMatch(addon -> !addon.isAvailable()))
+            throw new EntityUnavailableException("One or more Addons from cart is not available at this time");
+
+    }
+
+    private Cart fetchCart() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        Cart cart = cartRepository.findByUser(user);
+        if (cart == null) {
+            throw new EntityUnavailableException("Cart not found");
+        }
+
+        return cart;
+    }
+
+    private boolean updateCartPrice(Cart cart) {
+        if (!pricingService.refreshExpiredPrices(cart)) return false;
+
+        pricingService.updateCartTotal(cart);
+        return true;
+    }
+
+    private OrderResponse createOrderResponse(Order order, String message) {
+        UserSummary user = new UserSummary(
+                order.getUser().getUserId(),
+                order.getUser().getFirstName() + order.getUser().getLastName()
+        );
+
+        RestaurantSummary restaurant = new RestaurantSummary(
+                order.getRestaurant().getRestaurantId(),
+                order.getRestaurant().getRestaurantName()
+        );
+
+        AddressSummary address = new AddressSummary(
+                order.getDeliveryAddress().getAddressId(),
+                order.getDeliveryAddress().getBuildingNo(),
+                order.getDeliveryAddress().getStreet(),
+                order.getDeliveryAddress().getCity(),
+                order.getDeliveryAddress().getPincode(),
+                order.getDeliveryAddress().getLandmark(),
+                user
+        );
+
+        return new OrderResponse(
+                order.getOrderId(),
+                user,
+                restaurant,
+                order.getOrderStatus(),
+                order.getCreatedAt(),
+                address,
+                createOrderItemsSummaries(order),
+                order.getPaymentStatus(),
+                order.getTotalQuantity(),
+                message
+        );
+
+    }
+
+    private List<OrderItemSummary> createOrderItemsSummaries(Order order) {
+        return order.getOrderItems().stream()
+                .map(this::createOrderItemSummary)
+                .toList();
+    }
+
+    private OrderItemSummary createOrderItemSummary(OrderItem orderItem) {
+
+        List<AddonSummary> addons = createListOfAddonsSummary(orderItem.getAddons());
+
+        return new OrderItemSummary(
+                orderItem.getOrderItemId(),
+                orderItem.getFood().getFoodId(),
+                orderItem.getFood().getFoodName(),
+                orderItem.getQuantity(),
+                orderItem.getPriceAtOrder(),
+                addons,
+                orderItem.getItemTotal()
+        );
+    }
+
+    private List<AddonSummary> createListOfAddonsSummary(List<Addon> addons) {
+        return addons.stream()
+                .map(this::createAddonSummary)
+                .toList();
+    }
+
+    private AddonSummary  createAddonSummary(Addon addon) {
+        return new AddonSummary(
+                addon.getAddonId(),
+                addon.getAddonName()
+        );
+    }
+
+    public List<OrderResponse> getOrders() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        return user.getOrders().stream()
+                .map(order -> createOrderResponse(order, "Your order"))
+                .toList();
+    }
+
+    public List<OrderResponse> getOrdersForRestaurantOwner() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        return user.getOwnedRestaurants().stream()
+                .flatMap(restaurant -> restaurant.getOrders().stream())
+                .map(order -> createOrderResponse(order, "Your Restaurant Order"))
+                .toList();
+    }
+
+    public OrderResponse getOrder(Long orderId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order with id " + orderId + " not found"));
+
+        if(authentication.getAuthorities().contains(new SimpleGrantedAuthority("CUSTOMER"))) {
+            if(!order.getUser().equals(user)) {
+                throw new AccessDeniedException("Access denied, this order doesn't belongs to you");
+            }
+        }
+
+        if(authentication.getAuthorities().contains(new SimpleGrantedAuthority("RESTAURANT_OWNER"))) {
+            if(!user.getOwnedRestaurants().contains(order.getRestaurant())) {
+                throw new AccessDeniedException("Access denied, this order doesn't belongs to you and your restaurant too");
+            }
+        }
+
+        return createOrderResponse(order, "");
+    }
+
+    public String cancelOrder(Long orderId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order with id " + orderId + " not found"));
+
+        if(!order.getUser().equals(user))
+            throw new AccessDeniedException("Access denied, this order doesn't belongs to you");
+
+        if(canUserCancelOrder(order)) {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            return "Order has been cancelled";
+        }
+
+        throw new EntityUnavailableException("The order is " + order.getOrderStatus() + " now, So it can't be cancelled");
+    }
+
+    private boolean canUserCancelOrder(Order order) {
+        return order.getOrderStatus() == OrderStatus.CREATED ||
+                order.getOrderStatus() == OrderStatus.CONFIRMED;
+    }
+
+    public OrderResponse updateOrderStatus(Long orderId, UpdateOrderStatusRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = userRepository.findByEmail(authentication.getName());
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order with id " + orderId + " not found"));
+
+
+        if(!user.getOwnedRestaurants().contains(order.getRestaurant()))
+            throw new AccessDeniedException("Access denied, this order doesn't belongs to your Restaurant");
+
+        order.setOrderStatus(request.getOrderStatus());
+        orderRepository.save(order);
+
+        return createOrderResponse(order, "Order status has been updated");
+    }
+
+    public List<OrderResponse> getOrdersOfRestaurant(Long restaurantId) {
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new EntityNotFoundException("Restaurant with id " + restaurantId + " not found"));
+
+        return restaurant.getOrders().stream()
+                .map(order -> createOrderResponse(order, "Order from restaurant - " + restaurant.getRestaurantName()))
+                .toList();
+    }
+}

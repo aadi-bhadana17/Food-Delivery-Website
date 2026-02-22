@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -23,8 +24,15 @@ public class OrderItem {
     private int quantity;
     private BigDecimal priceAtOrder;
     private BigDecimal itemTotal;
-    @OneToMany
-    private List<Addon> addons;
+
+    @ManyToMany
+    @JoinTable(
+            name = "order_item_addons",
+            joinColumns = @JoinColumn(name = "order_item_id"),
+            inverseJoinColumns = @JoinColumn(name = "addon_id")
+    )
+    private List<Addon> addons = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;

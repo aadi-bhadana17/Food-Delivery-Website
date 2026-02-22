@@ -100,8 +100,8 @@ public class CartService {
 
         boolean priceUpdated = false;
         if (cart != null) {
-            priceUpdated = refreshExpiredPrices(cart);
-            updateCartTotal(cart);
+            priceUpdated = pricingService.refreshExpiredPrices(cart);
+            pricingService.updateCartTotal(cart);
         }
 
         return createCartResponse(cart, priceUpdated);
@@ -116,7 +116,7 @@ public class CartService {
         item.setQuantity(request.getQuantity());
         item.setItemTotal(pricingService.calculateItemTotal(item));
 
-        updateCartTotal(cart);
+        pricingService.updateCartTotal(cart);
         cartItemRepository.save(item);
 
         return createCartResponse(cart, true);
@@ -128,7 +128,7 @@ public class CartService {
         CartItem item = verifyCartItem(cartItemId, cart);
 
         cart.getItems().remove(item);
-        updateCartTotal(cart);
+        pricingService.updateCartTotal(cart);
 
         return createCartResponse(cart, true);
     }
@@ -138,7 +138,7 @@ public class CartService {
         Cart cart = verifyCart();
 
         cart.getItems().clear();
-        updateCartTotal(cart);
+        pricingService.updateCartTotal(cart);
 
         return "Cart has been cleared";
     }
@@ -297,37 +297,6 @@ public class CartService {
         }
 
         return addon;
-    }
-
-    private void updateCartTotal(Cart cart) {
-        cart.setTotalPrice(pricingService.calculateCartTotal(cart));
-        cart.setTotalQuantity(calculateTotalQuantity(cart));
-        cartRepository.save(cart);
-    }
-
-    private boolean refreshExpiredPrices(Cart cart) {
-        boolean anyPriceUpdated = false;
-
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
-
-        for(CartItem item : cart.getItems()){
-            if(item.getAddedTime().isBefore(oneHourAgo)){
-                BigDecimal newPrice = pricingService.calculateCurrentPrice(
-                        item.getFood(),
-                        item.getAddons());
-
-                if(!item.getPriceAtAddition().equals(newPrice)){
-                    item.setPriceAtAddition(newPrice);
-                    item.setItemTotal(newPrice.multiply
-                            (BigDecimal.valueOf(item.getQuantity())));
-                    item.setAddedTime(LocalDateTime.now());
-                    anyPriceUpdated = true;
-
-                    cartItemRepository.save(item);
-                }
-            }
-        }
-        return anyPriceUpdated;
     }
 
     private void addOrMergeCartItem(Cart cart, Food food, List<Addon> addonList, AddToCartRequest request) {
