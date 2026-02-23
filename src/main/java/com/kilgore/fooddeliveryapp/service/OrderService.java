@@ -45,13 +45,14 @@ public class OrderService {
     public OrderResponse placeOrder(PlaceOrderRequest request) {
         Cart cart = fetchCart();
 
+        if(cart.getItems().isEmpty())
+            throw new EntityUnavailableException("Cart is empty");
+
         Address address = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new EntityNotFoundException("Address not found"));
 
         String message = updateCartPrice(cart) ? "Some prices of cart has been updated according to current prices in restaurant"
                 : "Happy meal :)";
-
-        List<OrderItem> orderItems = createOrderItems(cart);
 
         Order order = new Order();
 
@@ -61,24 +62,28 @@ public class OrderService {
         order.setOrderStatus(OrderStatus.CREATED);
         order.setCreatedAt(LocalDateTime.now());
         order.setDeliveryAddress(address);
-        order.setOrderItems(orderItems);
         order.setPaymentStatus(PaymentStatus.PENDING);
         order.setTotalQuantity(cart.getTotalQuantity());
+
         orderRepository.save(order);
+        List<OrderItem> orderItems = createOrderItems(cart, order);
+
+        order.setOrderItems(orderItems);
 
         cart.getItems().clear();
+        cart.setRestaurant(null);
         cartRepository.save(cart);
 
         return createOrderResponse(order, message);
     }
 
-    private List<OrderItem> createOrderItems(Cart cart) {
+    private List<OrderItem> createOrderItems(Cart cart,  Order order) {
         return cart.getItems().stream()
-                .map(this::createOrderItem)
+                .map(item -> createOrderItem(item, order))
                 .toList();
     }
 
-    private OrderItem createOrderItem(CartItem cartItem) {
+    private OrderItem createOrderItem(CartItem cartItem,  Order order) {
 
         validateCartItems(cartItem);
 
@@ -89,6 +94,7 @@ public class OrderService {
         orderItem.setPriceAtOrder(cartItem.getPriceAtAddition());
         orderItem.setItemTotal(cartItem.getItemTotal());
         orderItem.setAddons(cartItem.getAddons());
+        orderItem.setOrder(order);
 
         orderItemRepository.save(orderItem);
 
@@ -195,7 +201,7 @@ public class OrderService {
         );
     }
 
-    public List<OrderResponse> getOrders() {
+    public List<OrderResponse> getMyOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName());
 
@@ -204,7 +210,7 @@ public class OrderService {
                 .toList();
     }
 
-    public List<OrderResponse> getOrdersForRestaurantOwner() {
+    public List<OrderResponse> getRestaurantOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName());
 
@@ -277,7 +283,7 @@ public class OrderService {
         return createOrderResponse(order, "Order status has been updated");
     }
 
-    public List<OrderResponse> getOrdersOfRestaurant(Long restaurantId) {
+    public List<OrderResponse> getAdminRestaurantOrders(Long restaurantId) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new EntityNotFoundException("Restaurant with id " + restaurantId + " not found"));
 

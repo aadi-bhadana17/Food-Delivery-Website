@@ -27,7 +27,7 @@ public class User {
     private USER_ROLE role;
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "customer")
+    @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "user")
     private List<Order> orders = new ArrayList<>();
 
     @ManyToMany

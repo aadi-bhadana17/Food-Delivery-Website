@@ -26,14 +26,14 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<OrderResponse> getOrders() {
-        return orderService.getOrders();
+    public List<OrderResponse> getMyOrders() {
+        return orderService.getMyOrders();
     }
 
-    @GetMapping
+    @GetMapping("/restaurant")
     @PreAuthorize("hasAnyAuthority('RESTAURANT_OWNER')")
-    public List<OrderResponse> getOrdersForRestaurantOwner() {
-        return orderService.getOrdersForRestaurantOwner();
+    public List<OrderResponse> getRestaurantOrders() {
+        return orderService.getRestaurantOrders();
     }
 
     @GetMapping("/{orderId}")
@@ -56,7 +56,7 @@ public class OrderController {
 
     @GetMapping("/restaurant/{restaurantId}")
     @PreAuthorize("hasAnyAuthority('ADMIN')")
-    public List<OrderResponse> getOrdersOfRestaurant(@PathVariable Long restaurantId) {
-        return orderService.getOrdersOfRestaurant(restaurantId);
+    public List<OrderResponse> getAdminRestaurantOrders(@PathVariable Long restaurantId) {
+        return orderService.getAdminRestaurantOrders(restaurantId);
     }
 }
