@@ -32,10 +32,3 @@ public class Cart {
     private Restaurant restaurant;
 
 }
-/*
-* public class Cart {
-    id;
-    customer;
-    items;
-    total;
-}*/
