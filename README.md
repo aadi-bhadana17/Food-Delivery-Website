@@ -17,7 +17,7 @@ A backend-focused academic project inspired by food delivery platforms like Swig
 - Lombok for boilerplate reduction
 - Maven for dependency management
 
-Upcoming ....
+Also done
 
 📋 Food/Menu Management (CRUD for food items)  
 🛒 Cart System  
