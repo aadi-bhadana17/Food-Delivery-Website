@@ -80,7 +80,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityUnavailableException.class)
     public ResponseEntity<String> handleEntityUnavailable(EntityUnavailableException ex) {
         return ResponseEntity
-                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidOrderStateException.class)
+    public ResponseEntity<String> handleInvalidOrderState(InvalidOrderStateException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(ex.getMessage());
     }
 

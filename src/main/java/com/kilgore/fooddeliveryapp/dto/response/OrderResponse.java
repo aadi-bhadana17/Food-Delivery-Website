@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class OrderResponse {
 
     private List<OrderItemSummary> orderItems;
     private PaymentStatus paymentStatus;
+    private BigDecimal totalPrice;
     private int totalQuantity;
 
     private String message;

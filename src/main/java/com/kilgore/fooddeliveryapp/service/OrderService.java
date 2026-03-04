@@ -6,6 +6,7 @@ import com.kilgore.fooddeliveryapp.dto.response.OrderResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.*;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityUnavailableException;
+import com.kilgore.fooddeliveryapp.exceptions.InvalidOrderStateException;
 import com.kilgore.fooddeliveryapp.model.*;
 import com.kilgore.fooddeliveryapp.repository.*;
 import jakarta.transaction.Transactional;
@@ -134,7 +135,7 @@ public class OrderService {
     private OrderResponse createOrderResponse(Order order, String message) {
         UserSummary user = new UserSummary(
                 order.getUser().getUserId(),
-                order.getUser().getFirstName() + order.getUser().getLastName()
+                order.getUser().getFirstName() + " " + order.getUser().getLastName()
         );
 
         RestaurantSummary restaurant = new RestaurantSummary(
@@ -161,6 +162,7 @@ public class OrderService {
                 address,
                 createOrderItemsSummaries(order),
                 order.getPaymentStatus(),
+                order.getTotalPrice(),
                 order.getTotalQuantity(),
                 message
         );
@@ -277,7 +279,14 @@ public class OrderService {
         if(!user.getOwnedRestaurants().contains(order.getRestaurant()))
             throw new AccessDeniedException("Access denied, this order doesn't belongs to your Restaurant");
 
-        order.setOrderStatus(request.getOrderStatus());
+        OrderStatus currentStatus = order.getOrderStatus();
+        OrderStatus newStatus = request.getOrderStatus();
+
+        if (!currentStatus.canTransitionTo(newStatus))
+            throw new InvalidOrderStateException(
+                    "Cannot transition order from " + currentStatus + " to " + newStatus);
+
+        order.setOrderStatus(newStatus);
         orderRepository.save(order);
 
         return createOrderResponse(order, "Order status has been updated");
