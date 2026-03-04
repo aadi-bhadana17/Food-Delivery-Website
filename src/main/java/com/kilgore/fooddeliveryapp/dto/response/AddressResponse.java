@@ -1,20 +1,14 @@
-package com.kilgore.fooddeliveryapp.model;
+package com.kilgore.fooddeliveryapp.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+@NoArgsConstructor
+public class AddressResponse {
     private Long addressId;
-
     private String buildingNo;
     private String street;
     private String city;
@@ -22,8 +16,4 @@ public class Address {
     private String pincode;
     private String landmark;
     private boolean isDefault;
-
-    @ManyToOne
-    @JsonIgnore
-    private User user;
 }
