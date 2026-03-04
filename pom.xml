@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.10</version>
+        <version>3.4.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.kilgore</groupId>
@@ -28,6 +28,12 @@
     </scm>
     <properties>
         <java.version>17</java.version>
+        <spring-framework.version>6.2.10</spring-framework.version>
+        <spring-security.version>6.4.10</spring-security.version>
+        <tomcat.version>10.1.50</tomcat.version>
+        <logback.version>1.5.25</logback.version>
+        <jackson-bom.version>2.18.6</jackson-bom.version>
+        <postgresql.version>42.7.7</postgresql.version>
     </properties>
     <dependencies>
         <dependency>
@@ -71,18 +77,18 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.11.1</version>
+            <version>0.12.6</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.11.1</version>
+            <version>0.12.6</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.11.1</version>
+            <version>0.12.6</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -97,6 +103,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

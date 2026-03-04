@@ -156,7 +156,9 @@ public class FoodService {
 
         RestaurantSummary restaurant = new RestaurantSummary(
                 food.getRestaurant().getRestaurantId(),
-                food.getRestaurant().getRestaurantName()
+                food.getRestaurant().getRestaurantName(),
+                food.getRestaurant().getCuisineType(),
+                food.getRestaurant().getAvgRating()
         );
 
         CategorySummary category = new CategorySummary(

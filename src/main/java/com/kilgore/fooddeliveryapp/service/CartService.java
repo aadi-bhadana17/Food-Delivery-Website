@@ -196,7 +196,12 @@ public class CartService {
         );
 
         RestaurantSummary restaurant = cart.getRestaurant() != null ?
-                new RestaurantSummary(cart.getRestaurant().getRestaurantId(), cart.getRestaurant().getRestaurantName()) : new RestaurantSummary();
+                new RestaurantSummary(
+                        cart.getRestaurant().getRestaurantId(),
+                        cart.getRestaurant().getRestaurantName(),
+                        cart.getRestaurant().getCuisineType(),
+                        cart.getRestaurant().getAvgRating()
+                ) : new RestaurantSummary();
 
         List<CartItemSummary> cartItems = cart.getItems().stream()
                 .map(item -> createCartItemSummary(item, item.getAddons()))

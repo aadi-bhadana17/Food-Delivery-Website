@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 
 
@@ -36,6 +38,7 @@ public class Restaurant {
 
     private LocalTime openingTime;
     private LocalTime closingTime;
+    private BigDecimal avgRating;
 
     @OneToMany(mappedBy = "restaurant")
     private List<Review> reviews;
@@ -56,4 +59,14 @@ public class Restaurant {
 
     @OneToMany(mappedBy = "restaurant")
     private List<Category> categories;
+    @ManyToMany(mappedBy = "favourites")
+    private Collection<User> users;
+
+    public Collection<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Collection<User> users) {
+        this.users = users;
+    }
 }

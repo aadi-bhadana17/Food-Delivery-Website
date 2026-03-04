@@ -140,7 +140,9 @@ public class OrderService {
 
         RestaurantSummary restaurant = new RestaurantSummary(
                 order.getRestaurant().getRestaurantId(),
-                order.getRestaurant().getRestaurantName()
+                order.getRestaurant().getRestaurantName(),
+                order.getRestaurant().getCuisineType(),
+                order.getRestaurant().getAvgRating()
         );
 
         AddressSummary address = new AddressSummary(

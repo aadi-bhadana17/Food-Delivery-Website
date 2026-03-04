@@ -23,6 +23,7 @@ public class User {
     private String lastName;
     private String email;
     private String password;
+    private String phone;
     @Enumerated(EnumType.STRING)
     private USER_ROLE role;
 
@@ -38,7 +39,7 @@ public class User {
     )
     private List<Restaurant> favourites = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses =  new ArrayList<>();
 
     @OneToMany(mappedBy = "owner")

@@ -25,4 +25,6 @@ public class Address {
     @ManyToOne
     @JsonIgnore
     private User user;
+
+    public boolean isDefault = false;
 }

@@ -91,4 +91,11 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(EntityNotExistsException.class)
+    public ResponseEntity<String> handleEntityNotExists(EntityNotExistsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ex.getMessage());
+        }
+
 }
