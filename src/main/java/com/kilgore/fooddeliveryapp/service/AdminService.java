@@ -4,7 +4,7 @@ import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDecisionDto;
 import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.exceptions.InvalidResponseForRoleChangeRequest;
 import com.kilgore.fooddeliveryapp.exceptions.RequestNotFoundException;
-import com.kilgore.fooddeliveryapp.model.REQUEST_STATUS;
+import com.kilgore.fooddeliveryapp.model.RequestStatus;
 import com.kilgore.fooddeliveryapp.model.RoleChangeRequest;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.RoleChangeRequestRepository;
@@ -64,7 +64,7 @@ public class AdminService {
 
             roleChangeRequest.setRespondedAt(LocalDateTime.now());
             roleChangeRequest.setHandledBy(admin);
-            roleChangeRequest.setRequestStatus(REQUEST_STATUS.APPROVED);
+            roleChangeRequest.setRequestStatus(RequestStatus.APPROVED);
             roleChangeRequestRepository.save(roleChangeRequest);
 
             user.setRole(roleChangeRequest.getRequestedRole()); // role has been changed and user is saved in db
@@ -76,7 +76,7 @@ public class AdminService {
         else if(request.getAction().equalsIgnoreCase("reject")) {
             roleChangeRequest.setRespondedAt(LocalDateTime.now());
             roleChangeRequest.setHandledBy(admin);
-            roleChangeRequest.setRequestStatus(REQUEST_STATUS.REJECTED);
+            roleChangeRequest.setRequestStatus(RequestStatus.REJECTED);
             roleChangeRequestRepository.save(roleChangeRequest);
 
         }

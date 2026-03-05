@@ -1,15 +1,14 @@
 package com.kilgore.fooddeliveryapp.service;
 
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
+import com.kilgore.fooddeliveryapp.model.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.*;
 
 @Service
@@ -24,36 +23,40 @@ public class JwtService {
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         String role = populateAuthorities(authorities);
 
-        Map<String, Object> claims = new HashMap<String, Object>();
+        Map<String, Object> claims = new HashMap<>();
 
         claims.put("email", email);
         claims.put("authorities", role);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .claims()
+                .add(claims)
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .and()
+                .signWith(getKey())
                 .compact();
     }
 
-    public String generateToken(String email,  USER_ROLE role) {
+    public String generateToken(String email,  UserRole role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
         claims.put("authorities", role);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .claims()
+                .add(claims)
+                .subject(email)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .and()
+                .signWith(getKey())
                 .compact();
     }
 
 
-    private Key getKey() {
+    private SecretKey getKey() {
         byte[] keyBytes = Base64.getDecoder().decode(SECRET);
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -73,11 +76,11 @@ public class JwtService {
 
 
     private Claims extractClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getKey())
+        return Jwts.parser()
+                .verifyWith(getKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public String extractAuthorities(String token) {

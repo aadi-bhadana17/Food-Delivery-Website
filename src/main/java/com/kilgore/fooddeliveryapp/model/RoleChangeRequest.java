@@ -22,10 +22,10 @@ public class RoleChangeRequest {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    private USER_ROLE requestedRole;
+    private UserRole requestedRole;
 
     @Enumerated(EnumType.STRING)
-    private REQUEST_STATUS requestStatus;
+    private RequestStatus requestStatus;
 
     @ManyToOne
     @JoinColumn(name = "handled_by_user_id")
@@ -37,7 +37,7 @@ public class RoleChangeRequest {
 
     @PrePersist
     public void prePersist() {
-        this.requestStatus = REQUEST_STATUS.PENDING;
+        this.requestStatus = RequestStatus.PENDING;
         this.requestedAt = LocalDateTime.now();
     }
 

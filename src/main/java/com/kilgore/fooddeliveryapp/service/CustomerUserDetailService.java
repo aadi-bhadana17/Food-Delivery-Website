@@ -1,6 +1,6 @@
 package com.kilgore.fooddeliveryapp.service;
 
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
+import com.kilgore.fooddeliveryapp.model.UserRole;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +27,9 @@ public class CustomerUserDetailService implements UserDetailsService {
             throw new UsernameNotFoundException("User with the username " + username + " not found");
         }
 
-        USER_ROLE role = user.getRole();
+        UserRole role = user.getRole();
         if (role == null) {
-            user.setRole(USER_ROLE.CUSTOMER);
+            user.setRole(UserRole.CUSTOMER);
         }
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
 

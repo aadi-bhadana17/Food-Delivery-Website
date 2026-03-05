@@ -1,6 +1,6 @@
 package com.kilgore.fooddeliveryapp.dto.request;
 
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
+import com.kilgore.fooddeliveryapp.model.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RoleChangeRequestDto {
-    private USER_ROLE requestedRole;
+    private UserRole requestedRole;
     private String requestReason;
 }

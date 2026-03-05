@@ -17,14 +17,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
 public class AppConfig {
 
-    private JwtTokenValidator jwtTokenValidator;
+    private final JwtTokenValidator jwtTokenValidator;
 
     public AppConfig(JwtTokenValidator jwtTokenValidator) {
         this.jwtTokenValidator = jwtTokenValidator;
@@ -36,7 +35,8 @@ public class AppConfig {
                 management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN", "RESTAURANT_OWNER")
+                        .requestMatchers("/public/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 ).addFilterBefore(jwtTokenValidator, BasicAuthenticationFilter.class)

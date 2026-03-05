@@ -5,7 +5,7 @@ import com.kilgore.fooddeliveryapp.dto.request.LoginRequest;
 import com.kilgore.fooddeliveryapp.dto.response.LoginAuthResponse;
 import com.kilgore.fooddeliveryapp.exceptions.InvalidCredentialsException;
 import com.kilgore.fooddeliveryapp.exceptions.UserAlreadyExistsException;
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
+import com.kilgore.fooddeliveryapp.model.UserRole;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -39,7 +39,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword())); // encoding password - bcrypt (one-way hash)
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setRole(USER_ROLE.CUSTOMER);
+        user.setRole(UserRole.CUSTOMER);
 
         userRepository.save(user);
 
@@ -67,6 +67,7 @@ public class AuthService {
 
         return new LoginAuthResponse(
                 token,
+                user.getFirstName(),
                 user.getEmail(),
                 user.getRole(),
                 jwtService.getExpiresAt(token)

@@ -1,6 +1,6 @@
 package com.kilgore.fooddeliveryapp.model;
 
-public enum REQUEST_STATUS {
+public enum RequestStatus {
     PENDING,
     APPROVED,
     REJECTED

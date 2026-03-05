@@ -1,6 +1,6 @@
 package com.kilgore.fooddeliveryapp.dto.response;
 
-import com.kilgore.fooddeliveryapp.model.USER_ROLE;
+import com.kilgore.fooddeliveryapp.model.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -8,7 +8,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class LoginAuthResponse {
     private String token;
+    private String firstName;
     private String email;
-    private USER_ROLE role;
+    private UserRole role;
     private long expiresAt;
 }
