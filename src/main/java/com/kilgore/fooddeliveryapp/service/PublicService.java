@@ -54,12 +54,12 @@ public class PublicService {
         );
     }
 
-    public RestaurantPublicResponse getRestaurantByName(String name) {
+    public List<RestaurantPublicResponse> getRestaurantByName(String name) {
 
-        Restaurant restaurant = (Restaurant) restaurantRepository.findRestaurantByRestaurantName (name)
-                .orElseThrow(() -> new EntityNotFoundException("Restaurant with name " + name + " not found"));
-
-        return createRestaurantPublicResponse(restaurant);
+        return restaurantRepository.findAll().stream()
+                .filter(r -> r.getRestaurantName().toLowerCase().contains(name.toLowerCase()))
+                .map(this::createRestaurantPublicResponse)
+                .toList();
     }
 
     public RestaurantPublicResponse getRestaurantById(Long id) {

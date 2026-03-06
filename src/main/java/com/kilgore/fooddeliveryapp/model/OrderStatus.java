@@ -21,6 +21,7 @@ public enum OrderStatus {
     );
 
     public boolean canTransitionTo(OrderStatus next) {
+        if(next == null) return false;
         return VALID_TRANSITIONS.getOrDefault(this, List.of()).contains(next);
     }
 }

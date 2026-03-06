@@ -31,8 +31,8 @@ public class PublicController {
         return publicService.getRestaurants(city, cuisineType, isOpen);
     }
 
-    @GetMapping("/restaurants/search?q=")
-    public RestaurantPublicResponse getRestaurantByName(@PathVariable String name) {
+    @GetMapping("/restaurants/search")
+    public List<RestaurantPublicResponse> getRestaurantByName(@RequestParam("q") String name) {
         return publicService.getRestaurantByName(name);
     }
 

@@ -94,6 +94,9 @@ public class OrderService {
         orderItem.setQuantity(cartItem.getQuantity());
         orderItem.setPriceAtOrder(cartItem.getPriceAtAddition());
         orderItem.setItemTotal(cartItem.getItemTotal());
+
+        orderItemRepository.save(orderItem);
+
         orderItem.setAddons(cartItem.getAddons());
         orderItem.setOrder(order);
 
