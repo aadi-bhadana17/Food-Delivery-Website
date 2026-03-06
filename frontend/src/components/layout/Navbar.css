@@ -1,29 +1,30 @@
 /* ===== FLOCKO NAVBAR ===== */
 
 .flocko-nav {
-    background: var(--white, #FFFFFF);
-    border-bottom: 1px solid var(--border, #E5E7EB);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
     padding: 0 2rem;
-    height: 64px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .flocko-logo {
     font-family: 'Fraunces', serif;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 900;
-    color: var(--primary, #22C55E);
+    color: var(--primary);
     letter-spacing: -0.5px;
     text-decoration: none;
 }
 
 .flocko-logo span {
-    color: var(--primary-dark, #16A34A);
+    color: var(--primary-dark);
 }
 
 .flocko-nav-links {
@@ -36,14 +37,14 @@
 
 .flocko-nav-links a {
     text-decoration: none;
-    color: var(--gray, #6B7280);
-    font-size: 0.9rem;
+    color: var(--gray);
+    font-size: 1rem;
     font-weight: 500;
     transition: color 0.2s;
 }
 
 .flocko-nav-links a:hover {
-    color: var(--dark, #1F2937);
+    color: var(--dark);
 }
 
 .flocko-nav-cta {
@@ -52,17 +53,37 @@
     align-items: center;
 }
 
+/* Theme Toggle */
+.flocko-theme-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all 0.2s;
+}
+
+.flocko-theme-toggle:hover {
+    border-color: var(--primary);
+    background: var(--green-tint);
+}
+
 .flocko-user-greeting {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 500;
-    color: var(--dark, #1F2937);
+    color: var(--dark);
     margin-right: 0.5rem;
 }
 
 .flocko-btn {
-    padding: 0.5rem 1.25rem;
+    padding: 0.55rem 1.35rem;
     border-radius: 8px;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -72,22 +93,22 @@
 
 .flocko-btn-outline {
     background: transparent;
-    border: 1.5px solid var(--border, #E5E7EB);
-    color: var(--dark, #1F2937);
+    border: 1.5px solid var(--border);
+    color: var(--dark);
 }
 
 .flocko-btn-outline:hover {
-    border-color: var(--primary, #22C55E);
-    color: var(--primary, #22C55E);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .flocko-btn-primary {
-    background: var(--primary, #22C55E);
+    background: var(--primary);
     color: white;
 }
 
 .flocko-btn-primary:hover {
-    background: var(--primary-dark, #16A34A);
+    background: var(--primary-dark);
 }
 
 /* Responsive */
@@ -104,4 +125,3 @@
         display: none;
     }
 }
-

@@ -1,11 +1,13 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
 import { motion } from 'framer-motion';
 import './Navbar.css';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
+    const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -16,7 +18,7 @@ const Navbar = () => {
     const getDashboardPath = () => {
         if (!user) return '/login';
         if (user.role === 'ADMIN') return '/admin';
-        if (user.role === 'RESTAURANT_OWNER') return '/restaurant';
+        if (user.role === 'RESTAURANT_OWNER') return '/restaurant-panel';
         return '/dashboard';
     };
 
@@ -28,10 +30,21 @@ const Navbar = () => {
 
             <ul className="flocko-nav-links">
                 <li><Link to="/">Restaurants</Link></li>
-                {user && <li><Link to={getDashboardPath()}>Dashboard</Link></li>}
+                {user && <li><Link to="/orders">Orders</Link></li>}
+                {user && <li><Link to="/cart">🛒 Cart</Link></li>}
+                {user && user.role !== 'CUSTOMER' && <li><Link to={getDashboardPath()}>Dashboard</Link></li>}
             </ul>
 
             <div className="flocko-nav-cta">
+                <motion.button
+                    className="flocko-theme-toggle"
+                    onClick={toggleTheme}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                    {theme === 'dark' ? '☀️' : '🌙'}
+                </motion.button>
                 {user ? (
                     <>
                         <motion.span

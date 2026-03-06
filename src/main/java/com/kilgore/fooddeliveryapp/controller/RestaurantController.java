@@ -4,7 +4,6 @@ import com.kilgore.fooddeliveryapp.dto.request.RestaurantRequest;
 import com.kilgore.fooddeliveryapp.dto.request.RestaurantStatusRequest;
 import com.kilgore.fooddeliveryapp.dto.response.RestaurantResponse;
 import com.kilgore.fooddeliveryapp.service.RestaurantService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,21 +13,28 @@ import java.util.List;
 @RequestMapping("/api/restaurants")
 public class RestaurantController {
 
-    @Autowired
-    private RestaurantService restaurantService;
+    private final RestaurantService restaurantService;
+
+    public RestaurantController(RestaurantService restaurantService) {
+        this.restaurantService = restaurantService;
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ADMIN' , 'RESTAURANT_OWNER') ")
     public RestaurantResponse addRestaurant(@RequestBody RestaurantRequest request) {
-        RestaurantResponse restaurantResponse = restaurantService
-                .createRestaurant(request);
 
-        return restaurantResponse;
+        return restaurantService.createRestaurant(request);
     }
 
     @GetMapping
     public List<RestaurantResponse> getAllRestaurants() {
         return restaurantService.getAllRestaurants();
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasAnyAuthority('RESTAURANT_OWNER')")
+    public List<RestaurantResponse> getMyRestaurants() {
+        return restaurantService.getMyRestaurants();
     }
 
     @GetMapping("/{id}")

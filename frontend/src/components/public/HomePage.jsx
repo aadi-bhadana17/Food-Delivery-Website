@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getRestaurants } from '../../api/publicService';
 import { AuthContext } from '../../context/AuthContext';
@@ -16,8 +16,16 @@ const cuisineEmoji = {
     AMERICAN: '🍔',
 };
 
+const OWNER_GREETINGS = [
+    "Your rating depends on today.",
+    "Customers are judging your menu.",
+    "Hope the orders keep coming.",
+    "Welcome back. Time to impress the customers."
+];
+
 const HomePage = () => {
     const { user } = useContext(AuthContext);
+    const ownerGreeting = useMemo(() => OWNER_GREETINGS[Math.floor(Math.random() * OWNER_GREETINGS.length)], []);
     const [restaurants, setRestaurants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -56,7 +64,11 @@ const HomePage = () => {
                 >
                     <div className="hero-tag">
                         <span className="hero-tag-dot"></span>
-                        {user ? `Welcome back, ${user.firstName || 'foodie'}!` : 'Now live in your city'}
+                        {user
+                            ? user.role === 'RESTAURANT_OWNER'
+                                ? ownerGreeting
+                                : `Welcome back, ${user.firstName || 'foodie'}!`
+                            : 'Now live in your city'}
                     </div>
                     <h1>
                         Food that <em>feels</em> like home

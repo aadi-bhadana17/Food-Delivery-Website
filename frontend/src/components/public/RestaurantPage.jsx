@@ -1,16 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../../api/publicService';
+import { addToCart } from '../../api/cartService';
+import { AuthContext } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import './RestaurantPage.css';
 
 const RestaurantPage = () => {
     const { id } = useParams();
+    const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [restaurant, setRestaurant] = useState(null);
     const [menu, setMenu] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeCategory, setActiveCategory] = useState(null);
+    const [addingToCart, setAddingToCart] = useState(null);
+    const [cartMsg, setCartMsg] = useState('');
+    const [selectedAddons, setSelectedAddons] = useState({});
 
     useEffect(() => {
         fetchData();
@@ -33,6 +40,37 @@ const RestaurantPage = () => {
             setError('Unable to load restaurant details.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleAddon = (foodId, addonId) => {
+        setSelectedAddons(prev => {
+            const foodAddons = prev[foodId] || [];
+            if (foodAddons.includes(addonId)) {
+                return { ...prev, [foodId]: foodAddons.filter(id => id !== addonId) };
+            }
+            return { ...prev, [foodId]: [...foodAddons, addonId] };
+        });
+    };
+
+    const handleAddToCart = async (foodId) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        setAddingToCart(foodId);
+        setCartMsg('');
+        try {
+            const addonIds = selectedAddons[foodId] || [];
+            await addToCart(foodId, 1, addonIds);
+            setCartMsg(`Added to cart!`);
+            setSelectedAddons(prev => ({ ...prev, [foodId]: [] }));
+            setTimeout(() => setCartMsg(''), 2000);
+        } catch (err) {
+            setCartMsg(err.response?.data?.message || err.response?.data || 'Failed to add to cart.');
+            setTimeout(() => setCartMsg(''), 3000);
+        } finally {
+            setAddingToCart(null);
         }
     };
 
@@ -110,6 +148,16 @@ const RestaurantPage = () => {
             </motion.div>
 
             {/* Menu */}
+            {cartMsg && (
+                <motion.div
+                    className="rp-cart-toast"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                >
+                    {cartMsg}
+                </motion.div>
+            )}
             <div className="rp-container rp-menu-layout">
                 {/* Category Sidebar */}
                 {menu?.categories?.length > 0 && (
@@ -170,6 +218,34 @@ const RestaurantPage = () => {
                                                         <p className="rp-food-desc">{food.foodDescription}</p>
                                                     )}
                                                     <div className="rp-food-price">₹{Number(food.foodPrice).toFixed(0)}</div>
+
+                                                    {/* Addon selection for this food */}
+                                                    {activeCategoryData.availableAddons?.length > 0 && (
+                                                        <div className="rp-food-addon-select">
+                                                            {activeCategoryData.availableAddons
+                                                                .filter(a => a.available !== false)
+                                                                .map(addon => (
+                                                                    <label key={addon.addonId} className="rp-food-addon-label">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={(selectedAddons[food.foodId] || []).includes(addon.addonId)}
+                                                                            onChange={() => toggleAddon(food.foodId, addon.addonId)}
+                                                                        />
+                                                                        <span>{addon.addonName} (+₹{Number(addon.price).toFixed(0)})</span>
+                                                                    </label>
+                                                                ))}
+                                                        </div>
+                                                    )}
+
+                                                    {food.available !== false && (
+                                                        <button
+                                                            className="rp-add-to-cart-btn"
+                                                            onClick={() => handleAddToCart(food.foodId)}
+                                                            disabled={addingToCart === food.foodId}
+                                                        >
+                                                            {addingToCart === food.foodId ? 'Adding...' : '+ Add to Cart'}
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 {food.images?.length > 0 && (
                                                     <div className="rp-food-img">

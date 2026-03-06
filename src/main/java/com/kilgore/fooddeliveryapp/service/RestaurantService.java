@@ -196,4 +196,15 @@ public class RestaurantService {
         restaurantRepository.save(restaurant);
         return toDto(restaurant);
     }
+
+    public List<RestaurantResponse> getMyRestaurants() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        return restaurantRepository.findAll()
+                .stream()
+                .filter(r -> r.getOwner().getEmail().equals(email))
+                .map(this::toDto)
+                .toList();
+    }
 }

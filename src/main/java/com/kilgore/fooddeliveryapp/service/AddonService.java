@@ -8,8 +8,10 @@ import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.Addon;
+import com.kilgore.fooddeliveryapp.model.Category;
 import com.kilgore.fooddeliveryapp.model.Restaurant;
 import com.kilgore.fooddeliveryapp.repository.AddonRepository;
+import com.kilgore.fooddeliveryapp.repository.CategoryRepository;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,8 @@ public class AddonService {
     private RestaurantRepository restaurantRepository;
     @Autowired
     private AddonRepository addonRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Transactional
     public AddonResponse createAddon(Long restaurantId,
@@ -38,8 +42,11 @@ public class AddonService {
         addon.setAvailable(request.isAvailable());
         addon.setPrice(request.getPrice());
 
-
         addonRepository.save(addon);
+
+        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+            linkCategories(addon, request.getCategoryIds(), restaurant);
+        }
 
         return createResponse(addon);
     }
@@ -66,6 +73,11 @@ public class AddonService {
         addon.setPrice(request.getPrice());
 
         addonRepository.save(addon);
+
+        unlinkAllCategories(addon);
+        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+            linkCategories(addon, request.getCategoryIds(), restaurant);
+        }
 
         return createResponse(addon);
     }
@@ -139,5 +151,21 @@ public class AddonService {
         }
 
         return addon;
+    }
+
+    private void linkCategories(Addon addon, List<Long> categoryIds, Restaurant restaurant) {
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+        for (Category category : categories) {
+            if (!category.getRestaurant().getRestaurantId().equals(restaurant.getRestaurantId())) {
+                throw new AccessDeniedException("Category does not belong to this restaurant.");
+            }
+            category.addAddon(addon);
+        }
+    }
+
+    private void unlinkAllCategories(Addon addon) {
+        for (Category category : List.copyOf(addon.getCategories())) {
+            category.removeAddon(addon);
+        }
     }
 }

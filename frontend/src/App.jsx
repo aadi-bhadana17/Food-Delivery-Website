@@ -7,12 +7,15 @@ import Unauthorized from './components/auth/Unauthorized';
 import Navbar from './components/layout/Navbar';
 import HomePage from './components/public/HomePage';
 import RestaurantPage from './components/public/RestaurantPage';
+import CartPage from './components/cart/CartPage';
+import OrdersPage from './components/orders/OrdersPage';
+import OrderDetailPage from './components/orders/OrderDetailPage';
+import RestaurantDashboard from './components/dashboard/RestaurantDashboard';
 import { ROLES } from './utils/constants';
 
 // Simple placeholder components for demonstration
 const CustomerDashboard = () => <h1>Customer Home</h1>;
 const AdminPanel = () => <h1>Admin Dashboard</h1>;
-const RestaurantPanel = () => <h1>Restaurant Management</h1>;
 
 // Layout with Navbar
 const WithNavbar = ({ children }) => (
@@ -59,9 +62,35 @@ function App() {
             path="/restaurant-panel"
             element={
               <ProtectedRoute allowedRoles={[ROLES.RESTAURANT_OWNER]}>
-                <WithNavbar><RestaurantPanel /></WithNavbar>
+                <WithNavbar><RestaurantDashboard /></WithNavbar>
               </ProtectedRoute>
             } 
+          />
+
+          {/* Cart & Orders (any logged-in user) */}
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+                <WithNavbar><CartPage /></WithNavbar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+                <WithNavbar><OrdersPage /></WithNavbar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:orderId"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+                <WithNavbar><OrderDetailPage /></WithNavbar>
+              </ProtectedRoute>
+            }
           />
 
           {/* Catch-all → Home */}
