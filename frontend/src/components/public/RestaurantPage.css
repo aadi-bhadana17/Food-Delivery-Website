@@ -114,6 +114,42 @@
     font-size: 0.9rem;
 }
 
+/* Favourite Button */
+.rp-fav-btn {
+    padding: 0.5rem 1.15rem;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--gray);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.rp-fav-btn:hover {
+    border-color: var(--error, #EF4444);
+    color: var(--error, #EF4444);
+    background: var(--error-bg, #FEF2F2);
+}
+
+.rp-fav-btn.rp-fav-active {
+    border-color: var(--error, #EF4444);
+    color: var(--error, #EF4444);
+    background: var(--error-bg, #FEF2F2);
+}
+
+.rp-fav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .rp-status.open {
     color: var(--primary);
 }

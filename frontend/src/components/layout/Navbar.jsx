@@ -1,14 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import { motion } from 'framer-motion';
+import ProfileDropdown from './ProfileDropdown';
 import './Navbar.css';
+import './ProfileDropdown.css';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
+    const [profileOpen, setProfileOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -32,7 +35,7 @@ const Navbar = () => {
                 <li><Link to="/">Restaurants</Link></li>
                 {user && <li><Link to="/orders">Orders</Link></li>}
                 {user && <li><Link to="/cart">🛒 Cart</Link></li>}
-                {user && user.role !== 'CUSTOMER' && <li><Link to={getDashboardPath()}>Dashboard</Link></li>}
+                {user && <li><Link to={getDashboardPath()}>Dashboard</Link></li>}
             </ul>
 
             <div className="flocko-nav-cta">
@@ -47,13 +50,20 @@ const Navbar = () => {
                 </motion.button>
                 {user ? (
                     <>
-                        <motion.span
-                            className="flocko-user-greeting"
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                        >
-                            👋 {user.firstName || 'User'}
-                        </motion.span>
+                        <div className="profile-dropdown-wrapper">
+                            <motion.div
+                                className="pd-trigger"
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                            >
+                                <span className="flocko-user-greeting">
+                                    👋 {user.firstName || 'User'}
+                                </span>
+                                <span className={`pd-trigger-arrow ${profileOpen ? 'open' : ''}`}>▼</span>
+                            </motion.div>
+                            <ProfileDropdown open={profileOpen} onClose={() => setProfileOpen(false)} />
+                        </div>
                         <motion.button
                             className="flocko-btn flocko-btn-outline"
                             onClick={handleLogout}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getRestaurantById, getRestaurantMenu } from '../../api/publicService';
 import { addToCart } from '../../api/cartService';
+import { getFavourites, addFavourite, removeFavourite } from '../../api/userService';
 import { AuthContext } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import './RestaurantPage.css';
@@ -18,10 +19,20 @@ const RestaurantPage = () => {
     const [addingToCart, setAddingToCart] = useState(null);
     const [cartMsg, setCartMsg] = useState('');
     const [selectedAddons, setSelectedAddons] = useState({});
+    const [isFavourite, setIsFavourite] = useState(false);
+    const [togglingFav, setTogglingFav] = useState(false);
 
     useEffect(() => {
         fetchData();
     }, [id]);
+
+    useEffect(() => {
+        if (user) {
+            getFavourites()
+                .then(favs => setIsFavourite(favs.some(f => f.restaurantId === parseInt(id))))
+                .catch(() => {});
+        }
+    }, [user, id]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -41,6 +52,21 @@ const RestaurantPage = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleToggleFavourite = async () => {
+        if (!user) return;
+        setTogglingFav(true);
+        try {
+            if (isFavourite) {
+                await removeFavourite(parseInt(id));
+                setIsFavourite(false);
+            } else {
+                await addFavourite(parseInt(id));
+                setIsFavourite(true);
+            }
+        } catch { /* silent */ }
+        finally { setTogglingFav(false); }
     };
 
     const toggleAddon = (foodId, addonId) => {
@@ -144,6 +170,15 @@ const RestaurantPage = () => {
                             )}
                         </div>
                     </div>
+                    {user && (
+                        <button
+                            className={`rp-fav-btn ${isFavourite ? 'rp-fav-active' : ''}`}
+                            onClick={handleToggleFavourite}
+                            disabled={togglingFav}
+                        >
+                            {isFavourite ? '❤️ Saved' : '🤍 Save'}
+                        </button>
+                    )}
                 </div>
             </motion.div>
 

@@ -22,3 +22,8 @@ export const getRestaurantMenu = async (id) => {
     return response.data;
 };
 
+export const searchRestaurants = async (query) => {
+    const response = await api.get(`${PUBLIC_BASE}/restaurants/search`, { params: { q: query } });
+    return response.data;
+};
+

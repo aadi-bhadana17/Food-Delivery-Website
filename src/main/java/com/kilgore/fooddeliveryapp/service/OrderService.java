@@ -3,6 +3,7 @@ package com.kilgore.fooddeliveryapp.service;
 import com.kilgore.fooddeliveryapp.dto.request.PlaceOrderRequest;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateOrderStatusRequest;
 import com.kilgore.fooddeliveryapp.dto.response.OrderResponse;
+import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.*;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityUnavailableException;
@@ -129,9 +130,10 @@ public class OrderService {
     }
 
     private boolean updateCartPrice(Cart cart) {
-        if (!pricingService.refreshExpiredPrices(cart)) return false;
-
-        pricingService.updateCartTotal(cart);
+//        if (!pricingService.refreshExpiredPrices(cart)) return false;
+//
+//        pricingService.updateCartTotal(cart);
+//        return true;
         return true;
     }
 
@@ -303,6 +305,12 @@ public class OrderService {
 
         return restaurant.getOrders().stream()
                 .map(order -> createOrderResponse(order, "Order from restaurant - " + restaurant.getRestaurantName()))
+                .toList();
+    }
+
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(order -> createOrderResponse(order, "All Orders"))
                 .toList();
     }
 }

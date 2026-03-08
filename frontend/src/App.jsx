@@ -11,11 +11,10 @@ import CartPage from './components/cart/CartPage';
 import OrdersPage from './components/orders/OrdersPage';
 import OrderDetailPage from './components/orders/OrderDetailPage';
 import RestaurantDashboard from './components/dashboard/RestaurantDashboard';
+import AdminDashboard from './components/dashboard/AdminDashboard';
+import CustomerDashboard from './components/dashboard/CustomerDashboard';
 import { ROLES } from './utils/constants';
 
-// Simple placeholder components for demonstration
-const CustomerDashboard = () => <h1>Customer Home</h1>;
-const AdminPanel = () => <h1>Admin Dashboard</h1>;
 
 // Layout with Navbar
 const WithNavbar = ({ children }) => (
@@ -53,7 +52,7 @@ function App() {
             path="/admin" 
             element={
               <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-                <WithNavbar><AdminPanel /></WithNavbar>
+                <WithNavbar><AdminDashboard /></WithNavbar>
               </ProtectedRoute>
             } 
           />

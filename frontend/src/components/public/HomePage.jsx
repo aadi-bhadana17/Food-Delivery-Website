@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getRestaurants } from '../../api/publicService';
+import { getRestaurants, searchRestaurants } from '../../api/publicService';
+import { getFavourites, addFavourite, removeFavourite } from '../../api/userService';
 import { AuthContext } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import './HomePage.css';
@@ -23,18 +24,45 @@ const OWNER_GREETINGS = [
     "Welcome back. Time to impress the customers."
 ];
 
+const ADMIN_GREETINGS = [
+    "Hi Boss, the platform is yours.",
+    "Welcome back, Boss. Everything is under control.",
+    "Hey Boss, time to run the show.",
+    "Boss mode activated. Let's go.",
+];
+
 const HomePage = () => {
     const { user } = useContext(AuthContext);
     const ownerGreeting = useMemo(() => OWNER_GREETINGS[Math.floor(Math.random() * OWNER_GREETINGS.length)], []);
+    const adminGreeting = useMemo(() => ADMIN_GREETINGS[Math.floor(Math.random() * ADMIN_GREETINGS.length)], []);
     const [restaurants, setRestaurants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedCuisine, setSelectedCuisine] = useState('ALL');
     const [showOpenOnly, setShowOpenOnly] = useState(false);
+    const [favouriteIds, setFavouriteIds] = useState(new Set());
+    const [togglingFav, setTogglingFav] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searching, setSearching] = useState(false);
 
     useEffect(() => {
+        if (user) {
+            getFavourites()
+                .then(favs => setFavouriteIds(new Set(favs.map(f => f.restaurantId))))
+                .catch(() => {});
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (searchQuery.trim()) return;
         fetchRestaurants();
-    }, [selectedCuisine, showOpenOnly]);
+    }, [selectedCuisine, showOpenOnly, searchQuery]);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) return;
+        const timeout = setTimeout(() => handleSearch(), 400);
+        return () => clearTimeout(timeout);
+    }, [searchQuery]);
 
     const fetchRestaurants = async () => {
         setLoading(true);
@@ -52,6 +80,39 @@ const HomePage = () => {
         }
     };
 
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+        setSearching(true);
+        setLoading(true);
+        setError('');
+        try {
+            const data = await searchRestaurants(searchQuery.trim());
+            setRestaurants(data);
+        } catch {
+            setError('Search failed. Please try again.');
+        } finally {
+            setSearching(false);
+            setLoading(false);
+        }
+    };
+
+    const handleToggleFavourite = async (e, restaurantId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!user) return;
+        setTogglingFav(restaurantId);
+        try {
+            if (favouriteIds.has(restaurantId)) {
+                await removeFavourite(restaurantId);
+                setFavouriteIds(prev => { const next = new Set(prev); next.delete(restaurantId); return next; });
+            } else {
+                await addFavourite(restaurantId);
+                setFavouriteIds(prev => new Set(prev).add(restaurantId));
+            }
+        } catch { /* silent */ }
+        finally { setTogglingFav(null); }
+    };
+
     return (
         <div className="home-page">
             {/* Hero Section */}
@@ -65,9 +126,11 @@ const HomePage = () => {
                     <div className="hero-tag">
                         <span className="hero-tag-dot"></span>
                         {user
-                            ? user.role === 'RESTAURANT_OWNER'
-                                ? ownerGreeting
-                                : `Welcome back, ${user.firstName || 'foodie'}!`
+                            ? user.role === 'ADMIN'
+                                ? adminGreeting
+                                : user.role === 'RESTAURANT_OWNER'
+                                    ? ownerGreeting
+                                    : `Welcome back, ${user.firstName || 'foodie'}!`
                             : 'Now live in your city'}
                     </div>
                     <h1>
@@ -76,6 +139,20 @@ const HomePage = () => {
                     <p>
                         Order from the best restaurants around you. Fast delivery, real flavors, zero compromise.
                     </p>
+                    {/* Search Bar */}
+                    <div className="home-search-bar">
+                        <span className="home-search-icon">🔍</span>
+                        <input
+                            type="text"
+                            className="home-search-input"
+                            placeholder="Search restaurants by name..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                        {searchQuery && (
+                            <button className="home-search-clear" onClick={() => setSearchQuery('')}>✕</button>
+                        )}
+                    </div>
                     <div className="hero-stats">
                         <div className="hero-stat">
                             <span className="hero-stat-num">1K+</span>
@@ -126,7 +203,9 @@ const HomePage = () => {
             <section className="home-section">
                 <div className="section-header">
                     <h2 className="section-title">
-                        {selectedCuisine === 'ALL' ? 'Popular near you' : `${selectedCuisine.charAt(0) + selectedCuisine.slice(1).toLowerCase()} Restaurants`}
+                        {searchQuery.trim()
+                            ? `Results for "${searchQuery}"`
+                            : selectedCuisine === 'ALL' ? 'Popular near you' : `${selectedCuisine.charAt(0) + selectedCuisine.slice(1).toLowerCase()} Restaurants`}
                     </h2>
                     <span className="section-count">
                         {!loading && `${restaurants.length} found`}
@@ -193,6 +272,16 @@ const HomePage = () => {
                                                     {cuisineEmoji[r.cuisineType] || '🍽️'}
                                                 </span>
                                                 {!r.open && <span className="closed-badge">Closed</span>}
+                                                {user && (
+                                                    <button
+                                                        className={`fav-btn ${favouriteIds.has(r.id) ? 'fav-active' : ''}`}
+                                                        onClick={(e) => handleToggleFavourite(e, r.id)}
+                                                        disabled={togglingFav === r.id}
+                                                        title={favouriteIds.has(r.id) ? 'Remove from favourites' : 'Add to favourites'}
+                                                    >
+                                                        {favouriteIds.has(r.id) ? '❤️' : '🤍'}
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className="r-body">
                                                 <div className="r-name">{r.name}</div>
