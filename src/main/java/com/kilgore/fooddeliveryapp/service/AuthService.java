@@ -5,6 +5,8 @@ import com.kilgore.fooddeliveryapp.dto.request.LoginRequest;
 import com.kilgore.fooddeliveryapp.dto.response.LoginAuthResponse;
 import com.kilgore.fooddeliveryapp.exceptions.InvalidCredentialsException;
 import com.kilgore.fooddeliveryapp.exceptions.UserAlreadyExistsException;
+import com.kilgore.fooddeliveryapp.exceptions.UserStatusException;
+import com.kilgore.fooddeliveryapp.model.AccountStatus;
 import com.kilgore.fooddeliveryapp.model.UserRole;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
@@ -14,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -61,9 +64,19 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        String token = jwtService.generateToken(authentication);
         User user = userRepository.findByEmail(request.getEmail());
 
+        if(user.getAccountStatus() == AccountStatus.BLOCKED) {
+            throw new UserStatusException("Your account is currently blocked. Please contact support for more information.");
+        }
+        if(user.getAccountStatus() == AccountStatus.DELETED){
+            throw new UserStatusException("Your account has been deleted. Please contact support for more information.");
+        }
+
+        String token = jwtService.generateToken(authentication);
+
+        user.setOnline(true);
+        userRepository.save(user);
 
         return new LoginAuthResponse(
                 token,
@@ -74,4 +87,11 @@ public class AuthService {
         );
     }
 
+    public String logoutUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email);
+        user.setOnline(false);
+        userRepository.save(user);
+        return "You have been logged out successfully.";
+    }
 }

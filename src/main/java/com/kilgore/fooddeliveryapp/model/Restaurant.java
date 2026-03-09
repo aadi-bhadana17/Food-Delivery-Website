@@ -53,6 +53,8 @@ public class Restaurant {
     private LocalDate registrationDate;
     private boolean open;
 
+    private RestaurantStatus restaurantStatus;
+
     @JsonIgnore
     @ManyToMany(cascade = CascadeType.PERSIST)
     private List<Food> foods;
@@ -62,11 +64,4 @@ public class Restaurant {
     @ManyToMany(mappedBy = "favourites")
     private Collection<User> users;
 
-    public Collection<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(Collection<User> users) {
-        this.users = users;
-    }
 }

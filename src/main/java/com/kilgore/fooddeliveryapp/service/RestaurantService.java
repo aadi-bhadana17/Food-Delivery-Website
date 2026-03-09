@@ -11,6 +11,7 @@ import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.ContactInformation;
 import com.kilgore.fooddeliveryapp.model.Restaurant;
 import com.kilgore.fooddeliveryapp.model.RestaurantAddress;
+import com.kilgore.fooddeliveryapp.model.RestaurantStatus;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;
@@ -60,6 +61,7 @@ public class RestaurantService {
         restaurant.setClosingTime(request.getClosingTime());
         restaurant.setRegistrationDate(LocalDate.now());
         restaurant.setOpen(isOpen(request));
+        restaurant.setRestaurantStatus(RestaurantStatus.ACTIVE);
 
         restaurant = restaurantRepository.save(restaurant);
 
@@ -84,6 +86,7 @@ public class RestaurantService {
                 restaurant.getOpeningTime(),
                 restaurant.getClosingTime(),
                 restaurant.isOpen(),
+                restaurant.getRestaurantStatus(),
                 restaurant.getRegistrationDate()
         );
     }

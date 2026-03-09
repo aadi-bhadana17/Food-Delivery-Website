@@ -3,7 +3,7 @@ package com.kilgore.fooddeliveryapp.dto.response;
 import com.kilgore.fooddeliveryapp.dto.request.ContactInformationDto;
 import com.kilgore.fooddeliveryapp.dto.request.RestaurantAddressDto;
 import com.kilgore.fooddeliveryapp.model.CuisineType;
-import com.kilgore.fooddeliveryapp.model.User;
+import com.kilgore.fooddeliveryapp.model.RestaurantStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,6 +24,7 @@ public class RestaurantResponse {
     private LocalTime openingTime;
     private LocalTime closingTime;
     private boolean open;
+    private RestaurantStatus restaurantStatus;
     private LocalDate registrationDate;
 
 }
