@@ -1,8 +1,10 @@
 package com.kilgore.fooddeliveryapp.controller;
 
 import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDecisionDto;
+import com.kilgore.fooddeliveryapp.dto.request.UserRestrictionDto;
 import com.kilgore.fooddeliveryapp.dto.response.OrderResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
+import com.kilgore.fooddeliveryapp.dto.summary.UserExtendedSummary;
 import com.kilgore.fooddeliveryapp.service.AdminService;
 import com.kilgore.fooddeliveryapp.service.OrderService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,47 @@ public class AdminController {
         this.orderService = orderService;
     }
 
+    // --------------------------------------------FETCHING USERS ENDPOINT---------------------------------------------
+
+    @GetMapping("/users")
+    public List<UserExtendedSummary> getAllUsers() {
+        return adminService.getAllUsers();
+    }
+
+    @GetMapping("/users/{userId}")
+    public UserExtendedSummary getUserById(@PathVariable Long userId) {
+        return adminService.getUserById(userId);
+    }
+
+    // --------------------------------------------USER MANAGEMENT ENDPOINTS--------------------------------------------
+
+    @PutMapping("/users/{userId}/restrict")
+    public String restrictUser(@PathVariable Long userId, @RequestBody UserRestrictionDto request) {
+        return adminService.restrictUser(userId, request);
+    }
+
+    @PutMapping("/users/{userId}/unrestrict")
+    public String unrestrictUser(@PathVariable Long userId) {
+        return adminService.unrestrictUser(userId);
+    }
+
+    @PutMapping("/users/{userId}/block")
+    public String blockUser(@PathVariable Long userId) {
+        return adminService.blockUser(userId);
+    }
+
+    @PutMapping("/users/{userId}/unblock")
+    public String unblockUser(@PathVariable Long userId) {
+         return adminService.unblockUser(userId);
+    }
+
+    @DeleteMapping("/users/{userId}")
+    public String deleteUser(@PathVariable Long userId) {
+        return adminService.deleteUser(userId);
+    }
+
+    // --------------------------------------------ROLE MANAGEMENT ENDPOINTS--------------------------------------------
+
     @GetMapping("/role-requests")
     public List<RoleChangeRequestResponse> getRoleRequests() {
         return adminService.getAllRoleRequests();
@@ -34,6 +77,20 @@ public class AdminController {
                                                        @PathVariable Long requestId) {
         return adminService.updateRole(request, requestId);
     }
+
+    // ------------------------------------------RESTAURANT MANAGEMENT ENDPOINTS----------------------------------------
+
+    @PutMapping("/restaurants/{restaurantId}/suspend")
+    public String suspendRestaurant(@PathVariable Long restaurantId) {
+        return adminService.suspendRestaurant(restaurantId);
+    }
+
+    @PutMapping("/restaurants/{restaurantId}/activate")
+    public String activateRestaurant(@PathVariable Long restaurantId) {
+        return adminService.activateRestaurant(restaurantId);
+    }
+
+    // ---------------------------------------------ORDER MANAGEMENT ENDPOINT------------------------------------------
 
     @GetMapping("/orders")
     public List<OrderResponse> getAllOrders() {

@@ -620,5 +620,58 @@
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .ad-restrict-form {
+        padding: 0.75rem !important;
+    }
+}
+
+/* ── User Status Badges ── */
+.ad-user-status-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.7rem;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+
+/* ── User Detail Grid (expanded view) ── */
+.ad-user-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.6rem;
+}
+
+.ad-user-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.ad-user-detail-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--gray, #6B7280);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ad-user-detail-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--dark, #1F2937);
+}
+
+/* ── Suspended Restaurant ── */
+.ad-btn-warn {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1.5px solid #FDE68A;
+}
+
+.ad-btn-warn:hover:not(:disabled) {
+    background: #F59E0B;
+    color: white;
+    border-color: #F59E0B;
 }
 

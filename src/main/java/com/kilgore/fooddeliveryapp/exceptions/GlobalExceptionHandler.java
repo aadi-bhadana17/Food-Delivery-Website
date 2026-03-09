@@ -96,6 +96,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ex.getMessage());
-        }
+    }
 
+    @ExceptionHandler(UserStatusException.class)
+    public ResponseEntity<String> handleUserStatusException(UserStatusException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ex.getMessage());
+    }
 }
