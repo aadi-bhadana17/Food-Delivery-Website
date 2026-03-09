@@ -81,7 +81,7 @@ const Login = () => {
             else if (data.role === 'RESTAURANT_OWNER') navigate('/restaurant-panel');
             else navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || "Invalid email or password");
+            setError(err.response?.data?.message || err.response?.data || "Invalid email or password");
         } finally {
             setLoading(false);
         }

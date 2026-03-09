@@ -1,13 +1,14 @@
 package com.kilgore.fooddeliveryapp.service;
 
+import com.kilgore.fooddeliveryapp.authorization.UserAuthorization;
 import com.kilgore.fooddeliveryapp.dto.request.PlaceOrderRequest;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateOrderStatusRequest;
 import com.kilgore.fooddeliveryapp.dto.response.OrderResponse;
-import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.*;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityUnavailableException;
 import com.kilgore.fooddeliveryapp.exceptions.InvalidOrderStateException;
+import com.kilgore.fooddeliveryapp.exceptions.UserStatusException;
 import com.kilgore.fooddeliveryapp.model.*;
 import com.kilgore.fooddeliveryapp.repository.*;
 import jakarta.transaction.Transactional;
@@ -30,10 +31,11 @@ public class OrderService {
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
     private final PricingService pricingService;
+    private final UserAuthorization userAuthorization;
 
     public OrderService(OrderRepository orderRepository, CartRepository cartRepository,
                         AddressRepository addressRepository, OrderItemRepository orderItemRepository,
-                        UserRepository userRepository, RestaurantRepository restaurantRepository, PricingService pricingService) {
+                        UserRepository userRepository, RestaurantRepository restaurantRepository, PricingService pricingService, UserAuthorization userAuthorization) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.addressRepository = addressRepository;
@@ -41,10 +43,18 @@ public class OrderService {
         this.userRepository = userRepository;
         this.restaurantRepository = restaurantRepository;
         this.pricingService = pricingService;
+        this.userAuthorization = userAuthorization;
     }
 
     @Transactional
     public OrderResponse placeOrder(PlaceOrderRequest request) {
+        User user = userAuthorization.authorizeUser();
+
+        if(user.getAccountStatus().equals(AccountStatus.RESTRICTED)) {
+            throw new UserStatusException("Your account is currently restricted, you can't place orders until " + user.getRestrictedUntil()
+                    + ". Please contact support for more info.");
+        }
+
         Cart cart = fetchCart();
 
         if(cart.getItems().isEmpty())
@@ -130,10 +140,9 @@ public class OrderService {
     }
 
     private boolean updateCartPrice(Cart cart) {
-//        if (!pricingService.refreshExpiredPrices(cart)) return false;
-//
-//        pricingService.updateCartTotal(cart);
-//        return true;
+        if (!pricingService.refreshExpiredPrices(cart)) return false;
+
+        pricingService.updateCartTotal(cart);
         return true;
     }
 

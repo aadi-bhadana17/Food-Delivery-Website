@@ -6,10 +6,8 @@ import com.kilgore.fooddeliveryapp.dto.publicResponse.MenuItemResponse;
 import com.kilgore.fooddeliveryapp.dto.publicResponse.RestaurantMenuResponse;
 import com.kilgore.fooddeliveryapp.dto.publicResponse.RestaurantPublicResponse;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
-import com.kilgore.fooddeliveryapp.model.Addon;
-import com.kilgore.fooddeliveryapp.model.Category;
-import com.kilgore.fooddeliveryapp.model.Food;
-import com.kilgore.fooddeliveryapp.model.Restaurant;
+import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
+import com.kilgore.fooddeliveryapp.model.*;
 import com.kilgore.fooddeliveryapp.repository.FoodRepository;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import org.springframework.stereotype.Service;
@@ -30,11 +28,11 @@ public class PublicService {
     }
 
     //(filters: city, cuisineType, isOpen)
-    public List<RestaurantPublicResponse> getRestaurants(String city, String cuisineType, Boolean isOpen) {
+    public List<RestaurantPublicResponse> getRestaurants(String city, String cuisineType) {
         List<Restaurant> restaurants = restaurantRepository.findAll().stream()
                 .filter(restaurant -> ((city == null) || restaurant.getAddress().getCity().equalsIgnoreCase(city)) &&
                         ((cuisineType == null) || restaurant.getCuisineType().name().equalsIgnoreCase(cuisineType)) &&
-                        (isOpen == null || (restaurant.isOpen() == isOpen)))
+                        isRestaurantAvailable(restaurant))
                 .toList();
 
         return restaurants.stream()
@@ -57,7 +55,7 @@ public class PublicService {
     public List<RestaurantPublicResponse> getRestaurantByName(String name) {
 
         return restaurantRepository.findAll().stream()
-                .filter(r -> r.getRestaurantName().toLowerCase().contains(name.toLowerCase()))
+                .filter(r -> r.getRestaurantName().toLowerCase().contains(name.toLowerCase()) && isRestaurantAvailable(r))
                 .map(this::createRestaurantPublicResponse)
                 .toList();
     }
@@ -66,12 +64,17 @@ public class PublicService {
         Restaurant restaurant = restaurantRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Restaurant with id " + id + " not found"));
 
+        if (!isRestaurantAvailable(restaurant)) throw new RestaurantNotFoundException(id);
+
         return createRestaurantPublicResponse(restaurant);
     }
 
     public RestaurantMenuResponse getRestaurantMenu(Long id) {
         Restaurant restaurant = restaurantRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Restaurant with id " + id + " not found"));
+
+        if (!isRestaurantAvailable(restaurant)) throw new RestaurantNotFoundException(id);
+
 
         List<Food> allFoods = foodRepository.findByRestaurant_RestaurantId(id);
 
@@ -132,5 +135,10 @@ public class PublicService {
                 restaurant.isOpen(),
                 categories
         );
+    }
+
+    private boolean isRestaurantAvailable(Restaurant restaurant) {
+        return (restaurant.getRestaurantStatus() == null || restaurant.getRestaurantStatus() == RestaurantStatus.ACTIVE)
+                && restaurant.isOpen();
     }
 }

@@ -25,10 +25,9 @@ public class PublicController {
     @GetMapping("/restaurants")
     public List<RestaurantPublicResponse> getRestaurants(
                                     @RequestParam(required = false) String city,
-                                    @RequestParam(required = false) String cuisineType,
-                                    @RequestParam(required = false) Boolean isOpen) {
+                                    @RequestParam(required = false) String cuisineType) {
 
-        return publicService.getRestaurants(city, cuisineType, isOpen);
+        return publicService.getRestaurants(city, cuisineType);
     }
 
     @GetMapping("/restaurants/search")

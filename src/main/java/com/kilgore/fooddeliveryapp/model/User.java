@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,13 @@ public class User {
     private String phone;
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean isOnline;
+
+    private LocalDateTime restrictedUntil;
+    private String restrictionReason;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "user")

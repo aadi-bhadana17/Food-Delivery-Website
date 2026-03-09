@@ -121,7 +121,7 @@ const Signup = () => {
                 navigate('/');
             }, 2000);
         } catch (err) {
-            setMsg({ type: 'error', text: err.response?.data?.message || "Registration failed" });
+            setMsg({ type: 'error', text: err.response?.data?.message || err.response?.data || "Registration failed" });
         } finally {
             setLoading(false);
         }
