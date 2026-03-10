@@ -54,6 +54,7 @@ public class Restaurant {
     private boolean open;
 
     private RestaurantStatus restaurantStatus;
+    private KitchenLoadIndicator kitchenStatus = KitchenLoadIndicator.LOW;
 
     @JsonIgnore
     @ManyToMany(cascade = CascadeType.PERSIST)

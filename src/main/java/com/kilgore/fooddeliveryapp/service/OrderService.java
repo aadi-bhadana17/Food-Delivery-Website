@@ -32,10 +32,11 @@ public class OrderService {
     private final RestaurantRepository restaurantRepository;
     private final PricingService pricingService;
     private final UserAuthorization userAuthorization;
+    private final KitchenLoadService kitchenLoadService;
 
     public OrderService(OrderRepository orderRepository, CartRepository cartRepository,
                         AddressRepository addressRepository, OrderItemRepository orderItemRepository,
-                        UserRepository userRepository, RestaurantRepository restaurantRepository, PricingService pricingService, UserAuthorization userAuthorization) {
+                        UserRepository userRepository, RestaurantRepository restaurantRepository, PricingService pricingService, UserAuthorization userAuthorization, KitchenLoadService kitchenLoadService) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.addressRepository = addressRepository;
@@ -44,6 +45,7 @@ public class OrderService {
         this.restaurantRepository = restaurantRepository;
         this.pricingService = pricingService;
         this.userAuthorization = userAuthorization;
+        this.kitchenLoadService = kitchenLoadService;
     }
 
     @Transactional
@@ -86,7 +88,14 @@ public class OrderService {
         cart.setRestaurant(null);
         cartRepository.save(cart);
 
+        setRestaurantKitchenStatus(order.getRestaurant());
+
         return createOrderResponse(order, message);
+    }
+
+    private void setRestaurantKitchenStatus(Restaurant restaurant) {
+        restaurant.setKitchenStatus(kitchenLoadService.getKitchenStatus(restaurant));
+        restaurantRepository.save(restaurant);
     }
 
     private List<OrderItem> createOrderItems(Cart cart,  Order order) {
