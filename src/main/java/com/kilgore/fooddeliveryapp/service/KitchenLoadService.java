@@ -27,7 +27,7 @@ public class KitchenLoadService {
         }
     }
 
-    private int getCurrentOrders(Restaurant restaurant) {
+    public int getCurrentOrders(Restaurant restaurant) {
         long orders = orderRepository.findAll().stream()
                 .filter(order -> order.getRestaurant().equals(restaurant)
                 && (order.getOrderStatus() == OrderStatus.PREPARING || order.getOrderStatus() == OrderStatus.CONFIRMED))

@@ -35,6 +35,8 @@ public class User {
     private LocalDateTime restrictedUntil;
     private String restrictionReason;
 
+    private Long employedAt;
+
     @JsonIgnore
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "user")
     private List<Order> orders = new ArrayList<>();
