@@ -117,3 +117,29 @@ export const removeCategoryAddons = async (restaurantId, categoryId, addonIds) =
     return response.data;
 };
 
+// ── Mess Plans ──
+export const getMessPlans = async (restaurantId) => {
+    const response = await api.get(`${BASE}/${restaurantId}/mess-plans`);
+    return response.data;
+};
+
+export const createMessPlan = async (restaurantId, data) => {
+    const response = await api.post(`${BASE}/${restaurantId}/mess-plans`, data);
+    return response.data;
+};
+
+export const getMessPlanById = async (restaurantId, messPlanId) => {
+    const response = await api.get(`${BASE}/${restaurantId}/mess-plans/${messPlanId}`);
+    return response.data;
+};
+
+export const updateMessPlan = async (restaurantId, messPlanId, data) => {
+    const response = await api.put(`${BASE}/${restaurantId}/mess-plans/${messPlanId}`, data);
+    return response.data;
+};
+
+export const deleteMessPlan = async (restaurantId, messPlanId) => {
+    const response = await api.delete(`${BASE}/${restaurantId}/mess-plans/${messPlanId}`);
+    return response.data;
+};
+

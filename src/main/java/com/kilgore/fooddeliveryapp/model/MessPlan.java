@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,8 +26,9 @@ public class MessPlan {
     private Restaurant restaurant;
     private BigDecimal price;
 
-    @OneToMany(mappedBy = "messPlan")
+    @OneToMany(mappedBy = "messPlan", cascade = CascadeType.ALL,  orphanRemoval = true)
     private List<MessPlanSlot> slots = new ArrayList<>();
 
     private boolean isActive = true;
+    private LocalDateTime deletionScheduledAt;
 }

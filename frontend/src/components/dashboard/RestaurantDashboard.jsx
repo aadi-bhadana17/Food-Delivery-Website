@@ -4,14 +4,37 @@ import {
     getCategories, createCategory, updateCategory, deleteCategory,
     getFoods, createFood, updateFood, updateFoodStatus, deleteFood,
     getAddons, createAddon, updateAddon, updateAddonAvailability, deleteAddon,
+    getMessPlans, createMessPlan, getMessPlanById, updateMessPlan, deleteMessPlan,
 } from '../../api/restaurantService';
 import { getRestaurantOrders, updateOrderStatus } from '../../api/orderService';
 import { motion, AnimatePresence } from 'framer-motion';
 import './RestaurantDashboard.css';
 
 const CUISINE_TYPES = ['INDIAN', 'CHINESE', 'ITALIAN', 'MEXICAN', 'CONTINENTAL', 'AMERICAN'];
-const TABS = ['restaurant', 'orders', 'categories', 'foods', 'addons'];
-const TAB_LABELS = { restaurant: '🏪 Restaurant', orders: '📦 Orders', categories: '📂 Categories', foods: '🍕 Foods', addons: '🧩 Addons' };
+const DAY_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'SNACKS', 'DINNER'];
+const TABS = ['restaurant', 'orders', 'categories', 'foods', 'addons', 'messPlans'];
+const TAB_LABELS = {
+    restaurant: '🏪 Restaurant',
+    orders: '📦 Orders',
+    categories: '📂 Categories',
+    foods: '🍕 Foods',
+    addons: '🧩 Addons',
+    messPlans: '📅 Mess Plans'
+};
+
+const normalizeMessPlan = (plan) => ({
+    ...plan,
+    active: typeof plan?.active === 'boolean' ? plan.active : !!plan?.isActive,
+});
+
+const normalizeMessPlansPayload = (payload) => {
+    if (Array.isArray(payload)) return payload.map(normalizeMessPlan);
+    if (Array.isArray(payload?.content)) return payload.content.map(normalizeMessPlan);
+    if (Array.isArray(payload?.data)) return payload.data.map(normalizeMessPlan);
+    if (Array.isArray(payload?.messPlans)) return payload.messPlans.map(normalizeMessPlan);
+    return [];
+};
 
 const RestaurantDashboard = () => {
     const [activeTab, setActiveTab] = useState('restaurant');
@@ -26,6 +49,7 @@ const RestaurantDashboard = () => {
     const [foods, setFoods] = useState([]);
     const [addons, setAddons] = useState([]);
     const [orders, setOrders] = useState([]);
+    const [messPlans, setMessPlans] = useState([]);
 
     // Forms
     const [showForm, setShowForm] = useState(false);
@@ -38,6 +62,10 @@ const RestaurantDashboard = () => {
             if (activeTab === 'categories') fetchCategories();
             if (activeTab === 'foods') fetchFoods();
             if (activeTab === 'addons') fetchAddons();
+            if (activeTab === 'messPlans') {
+                fetchFoods();
+                fetchMessPlans();
+            }
         }
         if (activeTab === 'orders') fetchOrders();
     }, [activeTab, restaurant]);
@@ -81,6 +109,16 @@ const RestaurantDashboard = () => {
     // ── Orders ──
     const fetchOrders = async () => {
         try { setOrders(await getRestaurantOrders()); }
+        catch (e) { flashError(e); }
+    };
+
+    // ── Mess Plans ──
+    const fetchMessPlans = async () => {
+        if (!restaurant) return;
+        try {
+            const payload = await getMessPlans(restaurant.restaurantId);
+            setMessPlans(normalizeMessPlansPayload(payload));
+        }
         catch (e) { flashError(e); }
     };
 
@@ -287,10 +325,10 @@ const RestaurantDashboard = () => {
                 {categories.length === 0 && !showForm ? (
                     <div className="rd-empty-small"><p>No categories yet. Add one to get started.</p></div>
                 ) : (
-                    <div className="rd-list">
+                    <div className="rd-card-grid">
                         {categories.map(cat => (
-                            <div key={cat.categoryId} className="rd-list-item">
-                                <div className="rd-list-info">
+                            <div key={cat.categoryId} className="rd-entity-card">
+                                <div className="rd-entity-content">
                                     <span className="rd-list-name">{cat.categoryName}</span>
                                     <span className="rd-list-sub">{cat.description} · Order: {cat.displayOrder}</span>
                                     {cat.addons?.length > 0 && (
@@ -401,10 +439,17 @@ const RestaurantDashboard = () => {
                 {foods.length === 0 && !showForm ? (
                     <div className="rd-empty-small"><p>No food items yet. Add one to get started.</p></div>
                 ) : (
-                    <div className="rd-list">
+                    <div className="rd-card-grid">
                         {foods.map(food => (
-                            <div key={food.id} className="rd-list-item">
-                                <div className="rd-list-info">
+                            <div key={food.id} className="rd-entity-card rd-food-card">
+                                <div className="rd-food-image-wrap">
+                                    <img
+                                        src={food.images?.[0] || '/vite.svg'}
+                                        alt={food.name}
+                                        className="rd-food-image"
+                                    />
+                                </div>
+                                <div className="rd-entity-content">
                                     <div className="rd-food-title-row">
                                         <span className="rd-list-name">
                                             {food.vegetarian && <span className="rd-veg">🟢</span>}
@@ -530,10 +575,10 @@ const RestaurantDashboard = () => {
                 {addons.length === 0 && !showForm ? (
                     <div className="rd-empty-small"><p>No addons yet. Add one to get started.</p></div>
                 ) : (
-                    <div className="rd-list">
+                    <div className="rd-card-grid">
                         {addons.map(addon => (
-                            <div key={addon.addonId} className="rd-list-item">
-                                <div className="rd-list-info">
+                            <div key={addon.addonId} className="rd-entity-card">
+                                <div className="rd-entity-content">
                                     <div className="rd-food-title-row">
                                         <span className="rd-list-name">{addon.addonName}</span>
                                         <span className="rd-food-price">₹{Number(addon.price).toFixed(0)}</span>
@@ -550,6 +595,348 @@ const RestaurantDashboard = () => {
                                     </button>
                                     <button className="rd-icon-btn" onClick={() => startEdit(addon)} title="Edit">✏️</button>
                                     <button className="rd-icon-btn danger" onClick={() => handleDelete(addon.addonId)} title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ═══════════════════════════════════════
+    //  MESS PLANS TAB
+    // ═══════════════════════════════════════
+    const MessPlansTab = () => {
+        const emptySlot = { dayOfWeek: 'MONDAY', mealType: 'BREAKFAST', foodIds: [] };
+        const empty = {
+            messPlanName: '',
+            messPlanDescription: '',
+            price: '',
+            slots: [emptySlot],
+        };
+
+        const [form, setForm] = useState(empty);
+        const [saving, setSaving] = useState(false);
+        const [showCreateForm, setShowCreateForm] = useState(false);
+        const [editId, setEditId] = useState(null);
+        const [selectedPlan, setSelectedPlan] = useState(null);
+        const [busyPlanId, setBusyPlanId] = useState(null);
+
+        const getFoodId = (food) => Number(food?.id ?? food?.foodId);
+        const getFoodName = (food) => food?.name ?? food?.foodName ?? `Food #${getFoodId(food)}`;
+
+        const resetForm = () => {
+            setForm(empty);
+            setEditId(null);
+            setShowCreateForm(false);
+        };
+
+        const toForm = (plan) => ({
+            messPlanName: plan?.messPlanName || '',
+            messPlanDescription: plan?.messPlanDescription || '',
+            price: plan?.price?.toString() || '',
+            slots: (plan?.slots || []).length > 0
+                ? plan.slots.map(slot => ({
+                    dayOfWeek: slot.dayOfWeek,
+                    mealType: slot.mealType,
+                    foodIds: (slot.foodItems || []).map(food => Number(food.foodId ?? food.id)),
+                }))
+                : [emptySlot],
+        });
+
+        const summarizePlan = (plan) => {
+            const slots = plan?.slots || [];
+            const days = new Set(slots.map(slot => slot.dayOfWeek)).size;
+            const meals = new Set(slots.map(slot => slot.mealType)).size;
+            return `${days} days · ${meals} meal types · ${slots.length} slots`;
+        };
+
+        const groupSlotsByDay = (plan) => {
+            const grouped = new Map();
+            DAY_OF_WEEK.forEach(day => grouped.set(day, new Map()));
+
+            (plan?.slots || []).forEach(slot => {
+                const dayMap = grouped.get(slot.dayOfWeek) || new Map();
+                dayMap.set(slot.mealType, slot.foodItems || []);
+                grouped.set(slot.dayOfWeek, dayMap);
+            });
+
+            return DAY_OF_WEEK
+                .map(day => ({
+                    day,
+                    meals: MEAL_TYPES
+                        .filter(meal => grouped.get(day)?.has(meal))
+                        .map(meal => ({ mealType: meal, foods: grouped.get(day).get(meal) || [] })),
+                }))
+                .filter(section => section.meals.length > 0);
+        };
+
+        const setSlot = (index, updates) => {
+            setForm(prev => ({
+                ...prev,
+                slots: prev.slots.map((slot, idx) => (idx === index ? { ...slot, ...updates } : slot))
+            }));
+        };
+
+        const toggleSlotFood = (index, foodId) => {
+            const target = form.slots[index];
+            const exists = target.foodIds.includes(foodId);
+            setSlot(index, {
+                foodIds: exists
+                    ? target.foodIds.filter(id => id !== foodId)
+                    : [...target.foodIds, foodId]
+            });
+        };
+
+        const addSlot = () => {
+            setForm(prev => ({ ...prev, slots: [...prev.slots, { ...emptySlot }] }));
+        };
+
+        const removeSlot = (index) => {
+            setForm(prev => ({
+                ...prev,
+                slots: prev.slots.filter((_, idx) => idx !== index)
+            }));
+        };
+
+        const formatEnum = (value) => value
+            ?.toLowerCase()
+            .split('_')
+            .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+            .join(' ');
+
+        const handleSave = async (e) => {
+            e.preventDefault();
+            const hasInvalidSlot = form.slots.some(slot => !slot.foodIds.length);
+            if (hasInvalidSlot) {
+                flashError({ response: { data: 'Please select at least one food item in each slot.' } });
+                return;
+            }
+
+            setSaving(true);
+            try {
+                const payload = {
+                    ...form,
+                    price: parseFloat(form.price),
+                    slots: form.slots.map(slot => ({
+                        dayOfWeek: slot.dayOfWeek,
+                        mealType: slot.mealType,
+                        foodIds: slot.foodIds.map(id => Number(id)),
+                    })),
+                };
+
+                if (editId) {
+                    const updatedPlan = normalizeMessPlan(await updateMessPlan(restaurant.restaurantId, editId, payload));
+                    setMessPlans(prev => prev.map(p => (p.messPlanId === editId ? updatedPlan : p)));
+                    flash('Mess plan updated!');
+                } else {
+                    const createdPlan = normalizeMessPlan(await createMessPlan(restaurant.restaurantId, payload));
+                    setMessPlans(prev => [createdPlan, ...prev]);
+                    flash('Mess plan created!');
+                }
+                resetForm();
+                setSelectedPlan(null);
+                await fetchMessPlans();
+            } catch (e) { flashError(e); }
+            finally { setSaving(false); }
+        };
+
+        const handleView = async (messPlanId) => {
+            if (selectedPlan?.messPlanId === messPlanId) {
+                setSelectedPlan(null);
+                return;
+            }
+
+            setBusyPlanId(messPlanId);
+            try {
+                const plan = normalizeMessPlan(await getMessPlanById(restaurant.restaurantId, messPlanId));
+                setSelectedPlan(plan);
+            } catch (e) { flashError(e); }
+            finally { setBusyPlanId(null); }
+        };
+
+        const startEdit = async (messPlanId) => {
+            setBusyPlanId(messPlanId);
+            try {
+                const plan = normalizeMessPlan(await getMessPlanById(restaurant.restaurantId, messPlanId));
+                setEditId(messPlanId);
+                setForm(toForm(plan));
+                setShowCreateForm(true);
+            } catch (e) { flashError(e); }
+            finally { setBusyPlanId(null); }
+        };
+
+        const handleDelete = async (messPlanId, planName) => {
+            if (!window.confirm(`Delete mess plan \"${planName}\"?`)) return;
+            setBusyPlanId(messPlanId);
+            try {
+                const message = await deleteMessPlan(restaurant.restaurantId, messPlanId);
+                flash(typeof message === 'string' ? message : 'Mess plan scheduled for deletion.');
+                if (selectedPlan?.messPlanId === messPlanId) {
+                    setSelectedPlan(null);
+                }
+                await fetchMessPlans();
+            } catch (e) { flashError(e); }
+            finally { setBusyPlanId(null); }
+        };
+
+        return (
+            <div>
+                <div className="rd-tab-header">
+                    <h3>Mess Plans ({messPlans.length})</h3>
+                    {!showCreateForm && (
+                        <button
+                            className="rd-btn rd-btn-primary"
+                            onClick={() => {
+                                setForm(empty);
+                                setEditId(null);
+                                setShowCreateForm(true);
+                            }}
+                        >
+                            + Create Mess Plan
+                        </button>
+                    )}
+                </div>
+
+                <AnimatePresence>
+                    {showCreateForm && (
+                        <motion.form className="rd-inline-form" onSubmit={handleSave} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                            <input
+                                placeholder="Mess Plan Name"
+                                value={form.messPlanName}
+                                onChange={e => setForm({ ...form, messPlanName: e.target.value })}
+                                required
+                            />
+                            <textarea
+                                placeholder="Description"
+                                value={form.messPlanDescription}
+                                onChange={e => setForm({ ...form, messPlanDescription: e.target.value })}
+                                required
+                            />
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="1"
+                                placeholder="Plan Price (₹)"
+                                value={form.price}
+                                onChange={e => setForm({ ...form, price: e.target.value })}
+                                required
+                            />
+
+                            <div className="rd-mp-slots-head">
+                                <span className="rd-cat-label">Slots</span>
+                                <button type="button" className="rd-btn rd-btn-outline rd-btn-sm" onClick={addSlot}>+ Add Slot</button>
+                            </div>
+
+                            {form.slots.map((slot, index) => (
+                                <div key={`${slot.dayOfWeek}-${slot.mealType}-${index}`} className="rd-mp-slot">
+                                    <div className="rd-form-row">
+                                        <select value={slot.dayOfWeek} onChange={e => setSlot(index, { dayOfWeek: e.target.value })}>
+                                            {DAY_OF_WEEK.map(day => <option key={day} value={day}>{formatEnum(day)}</option>)}
+                                        </select>
+                                        <select value={slot.mealType} onChange={e => setSlot(index, { mealType: e.target.value })}>
+                                            {MEAL_TYPES.map(type => <option key={type} value={type}>{formatEnum(type)}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="rd-cat-checkboxes">
+                                        <span className="rd-cat-label">Foods for this slot:</span>
+                                        {foods.length === 0 ? (
+                                            <span className="rd-list-sub">No foods available. Add foods first.</span>
+                                        ) : (
+                                            foods.map(food => (
+                                                <label key={`${food.id}-${index}`} className="rd-checkbox">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={slot.foodIds.includes(food.id)}
+                                                        onChange={() => toggleSlotFood(index, food.id)}
+                                                    />
+                                                    {food.name}
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {form.slots.length > 1 && (
+                                        <button type="button" className="rd-btn rd-btn-danger rd-btn-sm" onClick={() => removeSlot(index)}>
+                                            Remove Slot
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            <div className="rd-form-actions">
+                                <button type="submit" className="rd-btn rd-btn-primary" disabled={saving}>{saving ? 'Saving...' : (editId ? 'Update' : 'Create')}</button>
+                                <button type="button" className="rd-btn rd-btn-outline" onClick={resetForm}>Cancel</button>
+                            </div>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
+
+                {messPlans.length === 0 && !showCreateForm ? (
+                    <div className="rd-empty-small"><p>No mess plans yet. Create one to get started.</p></div>
+                ) : (
+                    <div className="rd-list">
+                        {messPlans.map(plan => (
+                            <div key={plan.messPlanId} className="rd-list-item rd-mp-item rd-mp-card">
+                                <div className="rd-list-info">
+                                    <div className="rd-mp-head-row">
+                                        <div className="rd-mp-title-wrap">
+                                            <span className="rd-list-name">{plan.messPlanName}</span>
+                                            <span className={`rd-mp-status ${plan.active ? 'active' : 'inactive'}`}>
+                                                {plan.active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
+                                        <span className="rd-food-price">₹{Number(plan.price).toFixed(0)}</span>
+                                    </div>
+                                    <span className="rd-list-sub rd-mp-summary">{summarizePlan(plan)}</span>
+
+                                    {selectedPlan?.messPlanId === plan.messPlanId && (
+                                        <div className="rd-mp-detail">
+                                            {groupSlotsByDay(selectedPlan).map(section => (
+                                                <div key={section.day} className="rd-mp-day-section">
+                                                    <div className="rd-mp-day-title">{formatEnum(section.day)}</div>
+                                                    {section.meals.map(meal => (
+                                                        <div key={`${section.day}-${meal.mealType}`} className="rd-mp-meal-block">
+                                                            <div className="rd-mp-meal-title">{formatEnum(meal.mealType)}</div>
+                                                            <div className="rd-list-tags rd-mp-food-chips">
+                                                                {meal.foods.map(food => (
+                                                                    <span key={food.foodId ?? food.id} className="rd-tag">
+                                                                        {getFoodName(food)}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="rd-list-actions">
+                                    <button
+                                        className="rd-btn rd-btn-outline rd-btn-sm"
+                                        onClick={() => handleView(plan.messPlanId)}
+                                        disabled={busyPlanId === plan.messPlanId}
+                                    >
+                                        {busyPlanId === plan.messPlanId ? '...' : (selectedPlan?.messPlanId === plan.messPlanId ? 'Hide' : 'View')}
+                                    </button>
+                                    <button
+                                        className="rd-btn rd-btn-outline rd-btn-sm"
+                                        onClick={() => startEdit(plan.messPlanId)}
+                                        disabled={busyPlanId === plan.messPlanId}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        className="rd-btn rd-btn-danger rd-btn-sm"
+                                        onClick={() => handleDelete(plan.messPlanId, plan.messPlanName)}
+                                        disabled={busyPlanId === plan.messPlanId}
+                                    >
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -740,6 +1127,7 @@ const RestaurantDashboard = () => {
                     {activeTab === 'categories' && (restaurant ? <CategoriesTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'foods' && (restaurant ? <FoodsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'addons' && (restaurant ? <AddonsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
+                    {activeTab === 'messPlans' && (restaurant ? <MessPlansTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                 </div>
             </div>
         </div>
