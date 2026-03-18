@@ -14,7 +14,6 @@ import com.kilgore.fooddeliveryapp.repository.AddonRepository;
 import com.kilgore.fooddeliveryapp.repository.CategoryRepository;
 import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -24,12 +23,15 @@ import java.util.List;
 @Service
 public class AddonService {
 
-    @Autowired
-    private RestaurantRepository restaurantRepository;
-    @Autowired
-    private AddonRepository addonRepository;
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final AddonRepository addonRepository;
+    private final CategoryRepository categoryRepository;
+
+    public AddonService(RestaurantRepository restaurantRepository, AddonRepository addonRepository, CategoryRepository categoryRepository) {
+        this.restaurantRepository = restaurantRepository;
+        this.addonRepository = addonRepository;
+        this.categoryRepository = categoryRepository;
+    }
 
     @Transactional
     public AddonResponse createAddon(Long restaurantId,
@@ -103,7 +105,7 @@ public class AddonService {
         return "deleted";
     }
 
-    /* HELPING METHODS */
+    //------------------------------------------------HELPER METHODS----------------------------------------------------
 
     private Restaurant verifyOwnerAccess(Long restaurantId) {
         String username =  SecurityContextHolder.getContext()

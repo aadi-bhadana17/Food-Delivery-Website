@@ -21,7 +21,7 @@ public class MessPlan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long messPlanId;
     private String messPlanName;
-    private String messPlanDescription;
+    private String description;
     @ManyToOne
     private Restaurant restaurant;
     private BigDecimal price;

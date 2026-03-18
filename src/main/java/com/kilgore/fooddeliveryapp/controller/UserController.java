@@ -4,6 +4,7 @@ import com.kilgore.fooddeliveryapp.dto.request.AddressRequest;
 import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDto;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateProfileRequest;
 import com.kilgore.fooddeliveryapp.dto.response.AddressResponse;
+import com.kilgore.fooddeliveryapp.dto.response.MessSubscriptionResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.dto.response.UserProfileResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
@@ -24,7 +25,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    //------------------------------------------Profile Management-------------------------------------------------------
+    //------------------------------------------Profile Management------------------------------------------------------
 
     @GetMapping("/profile")
     public UserProfileResponse getUserProfile() {
@@ -36,7 +37,7 @@ public class UserController {
         return userService.updateUserProfile(request);
     }
 
-    //------------------------------------------Address Management-------------------------------------------------------
+    //------------------------------------------Address Management------------------------------------------------------
 
 
     @GetMapping("/addresses")
@@ -66,7 +67,7 @@ public class UserController {
     }
 
 
-    //------------------------------------------Favourite Restaurants-------------------------------------------------------
+    //------------------------------------------Favourite Restaurants---------------------------------------------------
 
     @GetMapping("/favourites")
     public List<RestaurantSummary> getFavouriteRestaurants() {
@@ -83,7 +84,7 @@ public class UserController {
         return userService.removeFavouriteRestaurant(restaurantId);
     }
 
-    //------------------------------------------Role Change Request-------------------------------------------------------
+    //------------------------------------------Role Change Request-----------------------------------------------------
 
 
     @PostMapping("/role-change-request")
@@ -91,4 +92,15 @@ public class UserController {
         return userService.createRoleChangeRequest(request);
     }
 
+    //------------------------------------------MessPlan Subscription---------------------------------------------------
+
+    @GetMapping("/mess-plans/subscriptions")
+    public List<MessSubscriptionResponse> getMyMessSubscriptions(@RequestParam(required = false) Boolean active) {
+        return userService.getMyMessSubscriptions(active);
+    }
+
+    @PostMapping("/mess-plans/{messPlanId}/subscribe")
+    public String subscribeToMessPlan(@PathVariable Long messPlanId) {
+        return userService.subscribeToMessPlan(messPlanId);
+    }
 }

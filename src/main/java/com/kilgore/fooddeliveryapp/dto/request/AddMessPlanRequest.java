@@ -18,7 +18,7 @@ public class AddMessPlanRequest {
     @NotBlank
     private String messPlanName;
     @NotBlank
-    private String messPlanDescription;
+    private String description;
     @NotNull
     @Positive
     private BigDecimal price;

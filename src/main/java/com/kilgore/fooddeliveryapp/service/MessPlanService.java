@@ -73,7 +73,7 @@ public class MessPlanService {
 
         MessPlan messPlan = new MessPlan();
         messPlan.setMessPlanName(request.getMessPlanName());
-        messPlan.setMessPlanDescription(request.getMessPlanDescription());
+        messPlan.setDescription(request.getDescription());
         messPlan.setPrice(request.getPrice());
         messPlan.setRestaurant(restaurant);
         messPlan.setActive(true);
@@ -119,7 +119,7 @@ public class MessPlanService {
         }
 
         messPlan.setMessPlanName(request.getMessPlanName());
-        messPlan.setMessPlanDescription(request.getMessPlanDescription());
+        messPlan.setDescription(request.getDescription());
         messPlan.setPrice(request.getPrice());
 
         checkDistinctSlots(request.getSlots());
@@ -172,7 +172,7 @@ public class MessPlanService {
         return new MessPlanResponse(
                 messPlan.getMessPlanId(),
                 messPlan.getMessPlanName(),
-                messPlan.getMessPlanDescription(),
+                messPlan.getDescription(),
                 messPlan.getPrice(),
                 restaurantSummary,
                 slots,

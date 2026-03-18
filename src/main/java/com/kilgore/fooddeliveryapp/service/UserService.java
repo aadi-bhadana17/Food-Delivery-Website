@@ -5,24 +5,21 @@ import com.kilgore.fooddeliveryapp.dto.request.AddressRequest;
 import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDto;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateProfileRequest;
 import com.kilgore.fooddeliveryapp.dto.response.AddressResponse;
+import com.kilgore.fooddeliveryapp.dto.response.MessSubscriptionResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.dto.response.UserProfileResponse;
+import com.kilgore.fooddeliveryapp.dto.summary.MessPlanSummary;
 import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.UserAlreadyExistsException;
-import com.kilgore.fooddeliveryapp.model.Address;
-import com.kilgore.fooddeliveryapp.model.Restaurant;
-import com.kilgore.fooddeliveryapp.model.RoleChangeRequest;
-import com.kilgore.fooddeliveryapp.model.User;
-import com.kilgore.fooddeliveryapp.repository.AddressRepository;
-import com.kilgore.fooddeliveryapp.repository.RestaurantRepository;
-import com.kilgore.fooddeliveryapp.repository.RoleChangeRequestRepository;
-import com.kilgore.fooddeliveryapp.repository.UserRepository;
+import com.kilgore.fooddeliveryapp.model.*;
+import com.kilgore.fooddeliveryapp.repository.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -36,13 +33,17 @@ public class UserService {
     private final UserAuthorization userAuthorization;
     private final AddressRepository addressRepository;
     private final RestaurantRepository restaurantRepository;
+    private final MessPlanRepository messPlanRepository;
+    private final MessSubscriptionRepository messSubscriptionRepository;
 
-    public UserService(UserRepository userRepository, RoleChangeRequestRepository roleChangeRequestRepository, UserAuthorization userAuthorization, AddressRepository addressRepository, RestaurantRepository restaurantRepository) {
+    public UserService(UserRepository userRepository, RoleChangeRequestRepository roleChangeRequestRepository, UserAuthorization userAuthorization, AddressRepository addressRepository, RestaurantRepository restaurantRepository, MessPlanRepository messPlanRepository, MessSubscriptionRepository messSubscriptionRepository) {
         this.userRepository = userRepository;
         this.roleChangeRequestRepository = roleChangeRequestRepository;
         this.userAuthorization = userAuthorization;
         this.addressRepository = addressRepository;
         this.restaurantRepository = restaurantRepository;
+        this.messPlanRepository = messPlanRepository;
+        this.messSubscriptionRepository = messSubscriptionRepository;
     }
 
     // -----------------------------------------------------Profile Management------------------------------------------------------
@@ -253,5 +254,58 @@ public class UserService {
             throw new AccessDeniedException("This Address does not belongs to you");
 
         return address;
+    }
+
+    private MessSubscriptionResponse createMessSubscriptionResponse(MessSubscription subscription) {
+
+        MessPlanSummary plan = new  MessPlanSummary(
+                subscription.getMessPlan().getMessPlanId(),
+                subscription.getMessPlan().getMessPlanName(),
+                subscription.getMessPlan().getDescription(),
+                subscription.getMessPlan().getPrice()
+        );
+
+
+        return new MessSubscriptionResponse(
+                subscription.getSubscriptionId(),
+                plan,
+                subscription.getStartDate(),
+                subscription.getEndDate(),
+                subscription.isActive()
+        );
+    }
+
+    @Transactional
+    public String subscribeToMessPlan(Long messPlanId) {
+        User user = userAuthorization.authorizeUser();
+
+        MessPlan messPlan = messPlanRepository.findById(messPlanId)
+                .orElseThrow(() -> new EntityNotFoundException("Mess Plan with this id not found"));
+
+        if(messSubscriptionRepository.findActiveSubscriptionByUserAndMessPlan(user, messPlan))
+            throw new AccessDeniedException("You already have an active subscription for this mess plan");
+
+        LocalDate now = LocalDate.now();
+
+        MessSubscription messSubscription = new MessSubscription();
+        messSubscription.setUser(user);
+        messSubscription.setMessPlan(messPlan);
+        messSubscription.setStartDate(now);
+        messSubscription.setEndDate(now.plusDays(7));
+        messSubscription.setActive(true);
+        messSubscription.setPaymentStatus(PaymentStatus.SUCCESS);
+
+        messSubscriptionRepository.save(messSubscription);
+
+        return "You have been subscribed to mess plan : " + messPlan.getMessPlanName() + " for upcoming 7 days";
+    }
+
+    public List<MessSubscriptionResponse> getMyMessSubscriptions(Boolean active) {
+        User user = userAuthorization.authorizeUser();
+
+        return messSubscriptionRepository.findAllByUser(user).stream()
+                .filter(sub -> active == null || sub.isActive() == active)
+                .map(this::createMessSubscriptionResponse)
+                .toList();
     }
 }

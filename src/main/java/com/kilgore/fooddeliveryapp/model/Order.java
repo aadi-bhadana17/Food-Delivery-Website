@@ -44,8 +44,8 @@ public class Order {
     private PaymentStatus paymentStatus;
     private int totalQuantity;
 
-    @Column(nullable = false)
-    private boolean isPreOrder = false;
+    @Enumerated(EnumType.STRING)
+    private OrderType orderType = OrderType.REGULAR;
     private LocalDateTime scheduledAt;
     private BigDecimal refundAmount;
 }
