@@ -36,6 +36,8 @@ public class User {
     private String restrictionReason;
 
     private Long employedAt;
+    @Column(nullable = false)
+    private boolean isTempPassword = false;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.PERSIST, mappedBy = "user")
