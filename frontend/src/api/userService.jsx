@@ -12,6 +12,11 @@ export const updateProfile = async (profileData) => {
     return response.data;
 };
 
+export const changePassword = async (passwordData) => {
+    const response = await api.put(`${USER_BASE}/change-password`, passwordData);
+    return response.data;
+};
+
 export const submitRoleChangeRequest = async (requestData) => {
     const response = await api.post(`${USER_BASE}/role-change-request`, requestData);
     return response.data;
@@ -55,6 +60,20 @@ export const addFavourite = async (restaurantId) => {
 
 export const removeFavourite = async (restaurantId) => {
     const response = await api.delete(`${USER_BASE}/favourites/${restaurantId}`);
+    return response.data;
+};
+
+// ── Mess Plan Subscriptions ──
+export const subscribeToMessPlan = async (messPlanId) => {
+    const response = await api.post(`${USER_BASE}/mess-plans/${messPlanId}/subscribe`);
+    return response.data;
+};
+
+export const getMyMessSubscriptions = async (active) => {
+    const params = {};
+    if (typeof active === 'boolean') params.active = active;
+
+    const response = await api.get(`${USER_BASE}/mess-plans/subscriptions`, { params });
     return response.data;
 };
 

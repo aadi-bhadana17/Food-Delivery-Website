@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { getUserProfile, updateProfile, submitRoleChangeRequest } from '../../api/userService';
+import { getUserProfile, updateProfile, submitRoleChangeRequest, changePassword } from '../../api/userService';
 import { AuthContext } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import './ProfileDropdown.css';
@@ -10,13 +10,19 @@ const ProfileDropdown = ({ open, onClose }) => {
 
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeSection, setActiveSection] = useState('view'); // 'view', 'edit', 'role'
+    const [activeSection, setActiveSection] = useState('view'); // 'view', 'edit', 'password', 'role'
 
     // Edit form
     const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
     const [saving, setSaving] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState(''); // 'success' or 'error'
+    const [passwordForm, setPasswordForm] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmNewPassword: '',
+    });
 
     // Role change form
     const [roleForm, setRoleForm] = useState({ requestedRole: 'RESTAURANT_OWNER', requestReason: '' });
@@ -110,6 +116,41 @@ const ProfileDropdown = ({ open, onClose }) => {
         }
     };
 
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmNewPassword) {
+            flash('Please fill all password fields.', 'error');
+            return;
+        }
+        if (passwordForm.newPassword.length < 8) {
+            flash('New password must be at least 8 characters.', 'error');
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+            flash('New password and confirm password must match.', 'error');
+            return;
+        }
+
+        setChangingPassword(true);
+        try {
+            const response = await changePassword(passwordForm);
+            flash(typeof response === 'string' ? response : 'Password updated successfully!');
+            setPasswordForm({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
+
+            const storedUser = JSON.parse(localStorage.getItem('user'));
+            if (storedUser?.isTempPassword) {
+                login({ ...storedUser, isTempPassword: false });
+            }
+
+            setActiveSection('view');
+        } catch (err) {
+            const msg = err.response?.data?.message || err.response?.data || 'Failed to change password.';
+            flash(typeof msg === 'string' ? msg : 'Failed to change password.', 'error');
+        } finally {
+            setChangingPassword(false);
+        }
+    };
+
     if (!open) return null;
 
     return (
@@ -172,7 +213,16 @@ const ProfileDropdown = ({ open, onClose }) => {
                                     <button className="pd-btn pd-btn-primary" onClick={() => setActiveSection('edit')}>
                                         ✏️ Edit Profile
                                     </button>
+                                    <button className="pd-btn pd-btn-outline" onClick={() => setActiveSection('password')}>
+                                        🔒 Change Password
+                                    </button>
                                 </div>
+
+                                {user?.isTempPassword && (
+                                    <div className="pd-temp-password-note">
+                                        Temporary password detected. Please change your password now.
+                                    </div>
+                                )}
 
                                 {/* Role change CTA — only for CUSTOMER */}
                                 {user?.role === 'CUSTOMER' && (
@@ -239,6 +289,9 @@ const ProfileDropdown = ({ open, onClose }) => {
                                     <button type="submit" className="pd-btn pd-btn-primary" disabled={saving}>
                                         {saving ? 'Saving...' : 'Save Changes'}
                                     </button>
+                                    <button type="button" className="pd-btn pd-btn-outline" onClick={() => setActiveSection('password')}>
+                                        Change Password
+                                    </button>
                                     <button type="button" className="pd-btn pd-btn-outline" onClick={() => {
                                         setActiveSection('view');
                                         // Reset form to current profile
@@ -248,6 +301,53 @@ const ProfileDropdown = ({ open, onClose }) => {
                                             email: profile.email || '',
                                             phone: profile.phone || '',
                                         });
+                                    }}>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* ── PASSWORD MODE ── */}
+                        {activeSection === 'password' && (
+                            <form className="pd-edit-form" onSubmit={handleChangePassword}>
+                                <div className="pd-input-group">
+                                    <label>Current Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwordForm.oldPassword}
+                                        onChange={e => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="pd-input-group">
+                                    <label>New Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwordForm.newPassword}
+                                        onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                        minLength={8}
+                                        required
+                                    />
+                                </div>
+                                <div className="pd-input-group">
+                                    <label>Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        value={passwordForm.confirmNewPassword}
+                                        onChange={e => setPasswordForm({ ...passwordForm, confirmNewPassword: e.target.value })}
+                                        minLength={8}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="pd-actions">
+                                    <button type="submit" className="pd-btn pd-btn-primary" disabled={changingPassword}>
+                                        {changingPassword ? 'Updating...' : 'Update Password'}
+                                    </button>
+                                    <button type="button" className="pd-btn pd-btn-outline" onClick={() => {
+                                        setPasswordForm({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
+                                        setActiveSection('view');
                                     }}>
                                         Cancel
                                     </button>

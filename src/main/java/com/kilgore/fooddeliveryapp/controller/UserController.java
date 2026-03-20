@@ -1,6 +1,7 @@
 package com.kilgore.fooddeliveryapp.controller;
 
 import com.kilgore.fooddeliveryapp.dto.request.AddressRequest;
+import com.kilgore.fooddeliveryapp.dto.request.ChangePasswordRequest;
 import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDto;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateProfileRequest;
 import com.kilgore.fooddeliveryapp.dto.response.AddressResponse;
@@ -35,6 +36,11 @@ public class UserController {
     @PutMapping("/profile")
     public UserProfileResponse updateUserProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return userService.updateUserProfile(request);
+    }
+
+    @PutMapping("/change-password")
+    public String changePassword(@RequestBody ChangePasswordRequest request) {
+        return userService.changePassword(request);
     }
 
     //------------------------------------------Address Management------------------------------------------------------

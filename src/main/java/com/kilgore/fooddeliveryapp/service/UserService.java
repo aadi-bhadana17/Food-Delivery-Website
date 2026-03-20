@@ -2,6 +2,7 @@ package com.kilgore.fooddeliveryapp.service;
 
 import com.kilgore.fooddeliveryapp.authorization.UserAuthorization;
 import com.kilgore.fooddeliveryapp.dto.request.AddressRequest;
+import com.kilgore.fooddeliveryapp.dto.request.ChangePasswordRequest;
 import com.kilgore.fooddeliveryapp.dto.request.RoleChangeRequestDto;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateProfileRequest;
 import com.kilgore.fooddeliveryapp.dto.response.AddressResponse;
@@ -10,6 +11,7 @@ import com.kilgore.fooddeliveryapp.dto.response.RoleChangeRequestResponse;
 import com.kilgore.fooddeliveryapp.dto.response.UserProfileResponse;
 import com.kilgore.fooddeliveryapp.dto.summary.MessPlanSummary;
 import com.kilgore.fooddeliveryapp.dto.summary.RestaurantSummary;
+import com.kilgore.fooddeliveryapp.exceptions.CredentialsNotMatchException;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.exceptions.UserAlreadyExistsException;
 import com.kilgore.fooddeliveryapp.model.*;
@@ -17,6 +19,7 @@ import com.kilgore.fooddeliveryapp.repository.*;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,8 +38,9 @@ public class UserService {
     private final RestaurantRepository restaurantRepository;
     private final MessPlanRepository messPlanRepository;
     private final MessSubscriptionRepository messSubscriptionRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, RoleChangeRequestRepository roleChangeRequestRepository, UserAuthorization userAuthorization, AddressRepository addressRepository, RestaurantRepository restaurantRepository, MessPlanRepository messPlanRepository, MessSubscriptionRepository messSubscriptionRepository) {
+    public UserService(UserRepository userRepository, RoleChangeRequestRepository roleChangeRequestRepository, UserAuthorization userAuthorization, AddressRepository addressRepository, RestaurantRepository restaurantRepository, MessPlanRepository messPlanRepository, MessSubscriptionRepository messSubscriptionRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleChangeRequestRepository = roleChangeRequestRepository;
         this.userAuthorization = userAuthorization;
@@ -44,6 +48,7 @@ public class UserService {
         this.restaurantRepository = restaurantRepository;
         this.messPlanRepository = messPlanRepository;
         this.messSubscriptionRepository = messSubscriptionRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // -----------------------------------------------------Profile Management------------------------------------------------------
@@ -72,6 +77,21 @@ public class UserService {
         return createResponse(user);
     }
 
+
+    public String changePassword(ChangePasswordRequest request) {
+        User user = userAuthorization.authorizeUser();
+
+        String oldPassword = request.getOldPassword();
+
+        if(!passwordEncoder.matches(oldPassword, user.getPassword()))  // as BCrypt generated random hash everytime, so we can just compare old password from request by hashing it
+            throw new CredentialsNotMatchException("Old password is incorrect"); // and when we call this method - .matches(), BCrypt store salt(that random thing) from always in the hash so it they get compared easily - by applying the same salt to both the old password and the stored password hash.
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTempPassword(false);
+        userRepository.save(user);
+
+        return "Password changed successfully";
+    }
 
     // ------------------------------------------------------Address Management----------------------------------------------------
 
@@ -282,7 +302,7 @@ public class UserService {
         MessPlan messPlan = messPlanRepository.findById(messPlanId)
                 .orElseThrow(() -> new EntityNotFoundException("Mess Plan with this id not found"));
 
-        if(messSubscriptionRepository.findActiveSubscriptionByUserAndMessPlan(user, messPlan))
+        if(messSubscriptionRepository.findActiveSubscriptionByUserAndMessPlan(user, messPlan) != null)
             throw new AccessDeniedException("You already have an active subscription for this mess plan");
 
         LocalDate now = LocalDate.now();
