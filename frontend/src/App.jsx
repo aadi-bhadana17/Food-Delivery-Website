@@ -11,6 +11,7 @@ import CartPage from './components/cart/CartPage';
 import OrdersPage from './components/orders/OrdersPage';
 import OrderDetailPage from './components/orders/OrderDetailPage';
 import RestaurantDashboard from './components/dashboard/RestaurantDashboard';
+import RestaurantStaffDashboard from './components/dashboard/RestaurantStaffDashboard';
 import AdminDashboard from './components/dashboard/AdminDashboard';
 import CustomerDashboard from './components/dashboard/CustomerDashboard';
 import { ROLES } from './utils/constants';
@@ -66,11 +67,20 @@ function App() {
             } 
           />
 
+          <Route
+            path="/staff-panel"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.RESTAURANT_STAFF]}>
+                <WithNavbar><RestaurantStaffDashboard /></WithNavbar>
+              </ProtectedRoute>
+            }
+          />
+
           {/* Cart & Orders (any logged-in user) */}
           <Route
             path="/cart"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER, ROLES.RESTAURANT_STAFF]}>
                 <WithNavbar><CartPage /></WithNavbar>
               </ProtectedRoute>
             }
@@ -78,7 +88,7 @@ function App() {
           <Route
             path="/orders"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER, ROLES.RESTAURANT_STAFF]}>
                 <WithNavbar><OrdersPage /></WithNavbar>
               </ProtectedRoute>
             }
@@ -86,7 +96,7 @@ function App() {
           <Route
             path="/orders/:orderId"
             element={
-              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER]}>
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER, ROLES.RESTAURANT_STAFF]}>
                 <WithNavbar><OrderDetailPage /></WithNavbar>
               </ProtectedRoute>
             }

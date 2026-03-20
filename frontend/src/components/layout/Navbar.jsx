@@ -22,6 +22,7 @@ const Navbar = () => {
         if (!user) return '/login';
         if (user.role === 'ADMIN') return '/admin';
         if (user.role === 'RESTAURANT_OWNER') return '/restaurant-panel';
+        if (user.role === 'RESTAURANT_STAFF') return '/staff-panel';
         return '/dashboard';
     };
 

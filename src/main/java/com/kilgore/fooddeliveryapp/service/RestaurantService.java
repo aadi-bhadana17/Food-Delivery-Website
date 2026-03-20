@@ -1,8 +1,11 @@
 package com.kilgore.fooddeliveryapp.service;
 
+import com.kilgore.fooddeliveryapp.authorization.UserAuthorization;
 import com.kilgore.fooddeliveryapp.dto.request.*;
 import com.kilgore.fooddeliveryapp.dto.response.OwnerResponse;
 import com.kilgore.fooddeliveryapp.dto.response.RestaurantResponse;
+import com.kilgore.fooddeliveryapp.dto.response.StaffCreationResponse;
+import com.kilgore.fooddeliveryapp.dto.summary.UserSummary;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantAlreadyExistsException;
 import com.kilgore.fooddeliveryapp.exceptions.RestaurantNotFoundException;
 import com.kilgore.fooddeliveryapp.model.*;
@@ -11,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,10 +26,14 @@ public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
+    private final UserAuthorization userAuthorization;
+    private final PasswordEncoder passwordEncoder;
 
-    public RestaurantService(RestaurantRepository restaurantRepository, UserRepository userRepository) {
+    public RestaurantService(RestaurantRepository restaurantRepository, UserRepository userRepository, UserAuthorization userAuthorization, PasswordEncoder passwordEncoder) {
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
+        this.userAuthorization = userAuthorization;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public RestaurantResponse createRestaurant(RestaurantRequest request) {
@@ -206,4 +214,65 @@ public class RestaurantService {
     }
 
 
+    public StaffCreationResponse addStaffToRestaurant(Long id, AddStaffRequest request) {
+        User user = userAuthorization.authorizeUser();
+
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new RestaurantNotFoundException(id));
+
+        if(!restaurant.getOwner().getEmail().equals(user.getEmail())) {
+            throw new AccessDeniedException("You are not authorized to add staff to this restaurant.");
+        }
+
+        String password = request.getFirstName() + "@" + request.getPhone().substring(7) + "***";
+
+        User staff = new User();
+        staff.setFirstName(request.getFirstName());
+        staff.setLastName(request.getLastName());
+        staff.setEmail(request.getEmail());
+        staff.setPhone(request.getPhone());
+        staff.setRole(UserRole.RESTAURANT_STAFF);
+        staff.setEmployedAt(id);
+        staff.setPassword(passwordEncoder.encode(password));
+        staff.setTempPassword(true);
+
+        userRepository.save(staff);
+
+        return toDto(staff, password);
+    }
+
+    private StaffCreationResponse toDto(User user, String password) {
+        return new StaffCreationResponse(
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole(),
+                password
+        );
+    }
+
+    public List<UserSummary> getAllStaff(Long id) {
+        User user = userAuthorization.authorizeUser();
+
+        Restaurant restaurant =  restaurantRepository.findById(id)
+                .orElseThrow(() -> new RestaurantNotFoundException(id));
+
+        if(user.getRole() == UserRole.RESTAURANT_OWNER && !restaurant.getOwner().getEmail().equals(user.getEmail())) {
+            throw new AccessDeniedException("You are not authorized to view the staff of this restaurant.");
+        }
+
+        return userRepository.findByRestaurantId(id)
+                .stream()
+                .filter(u -> u.getRole() == UserRole.RESTAURANT_STAFF)
+                .map(this::toUserSummary)
+                .toList();
+    }
+
+    private UserSummary toUserSummary(User user) {
+        return new UserSummary(
+                user.getUserId(),
+                user.getFirstName() + " " + user.getLastName()
+        );
+    }
 }

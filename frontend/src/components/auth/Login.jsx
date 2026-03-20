@@ -68,6 +68,8 @@ const Login = () => {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
 
+    const hasTempPassword = (data) => data?.isTempPassword === true || data?.tempPassword === true;
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -77,8 +79,13 @@ const Login = () => {
             const data = await loginApi(credentials);
             login(data);
 
+            if (hasTempPassword(data)) {
+                window.alert('You are using a temporary password. Please change it from your profile settings.');
+            }
+
             if (data.role === 'ADMIN') navigate('/admin');
             else if (data.role === 'RESTAURANT_OWNER') navigate('/restaurant-panel');
+            else if (data.role === 'RESTAURANT_STAFF') navigate('/staff-panel');
             else navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || err.response?.data || "Invalid email or password");

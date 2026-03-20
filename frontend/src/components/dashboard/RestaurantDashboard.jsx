@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
     getMyRestaurants, createRestaurant, updateRestaurant, updateRestaurantStatus,
+    getRestaurantStaff, addRestaurantStaff,
     getCategories, createCategory, updateCategory, deleteCategory,
     getFoods, createFood, updateFood, updateFoodStatus, deleteFood,
     getAddons, createAddon, updateAddon, updateAddonAvailability, deleteAddon,
     getMessPlans, createMessPlan, getMessPlanById, updateMessPlan, deleteMessPlan,
 } from '../../api/restaurantService';
 import { getRestaurantOrders, updateOrderStatus } from '../../api/orderService';
+import { updateKitchenStatus } from '../../api/kitchenService';
 import { motion, AnimatePresence } from 'framer-motion';
 import './RestaurantDashboard.css';
 
 const CUISINE_TYPES = ['INDIAN', 'CHINESE', 'ITALIAN', 'MEXICAN', 'CONTINENTAL', 'AMERICAN'];
 const DAY_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'SNACKS', 'DINNER'];
-const TABS = ['restaurant', 'orders', 'categories', 'foods', 'addons', 'messPlans'];
+const TABS = ['restaurant', 'staff', 'orders', 'kitchen', 'categories', 'foods', 'addons', 'messPlans'];
 const TAB_LABELS = {
     restaurant: '🏪 Restaurant',
+    staff: '👥 Staff',
     orders: '📦 Orders',
+    kitchen: '👨‍🍳 Kitchen',
     categories: '📂 Categories',
     foods: '🍕 Foods',
     addons: '🧩 Addons',
@@ -50,6 +54,11 @@ const RestaurantDashboard = () => {
     const [addons, setAddons] = useState([]);
     const [orders, setOrders] = useState([]);
     const [messPlans, setMessPlans] = useState([]);
+    const [staffMembers, setStaffMembers] = useState([]);
+    const [createdStaff, setCreatedStaff] = useState(null);
+    const [kitchenLoadIndicator, setKitchenLoadIndicator] = useState('MEDIUM');
+    const [kitchenBusy, setKitchenBusy] = useState(false);
+    const [kitchenResponse, setKitchenResponse] = useState(null);
 
     // Forms
     const [showForm, setShowForm] = useState(false);
@@ -59,6 +68,7 @@ const RestaurantDashboard = () => {
 
     useEffect(() => {
         if (restaurant) {
+            if (activeTab === 'staff') fetchStaff();
             if (activeTab === 'categories') fetchCategories();
             if (activeTab === 'foods') fetchFoods();
             if (activeTab === 'addons') fetchAddons();
@@ -109,6 +119,13 @@ const RestaurantDashboard = () => {
     // ── Orders ──
     const fetchOrders = async () => {
         try { setOrders(await getRestaurantOrders()); }
+        catch (e) { flashError(e); }
+    };
+
+    // ── Staff ──
+    const fetchStaff = async () => {
+        if (!restaurant) return;
+        try { setStaffMembers(await getRestaurantStaff(restaurant.restaurantId)); }
         catch (e) { flashError(e); }
     };
 
@@ -605,6 +622,113 @@ const RestaurantDashboard = () => {
     };
 
     // ═══════════════════════════════════════
+    //  STAFF TAB
+    // ═══════════════════════════════════════
+    const StaffTab = () => {
+        const empty = { firstName: '', lastName: '', email: '', phone: '' };
+        const [form, setForm] = useState(empty);
+        const [saving, setSaving] = useState(false);
+        const [copied, setCopied] = useState(false);
+
+        const handleSave = async (e) => {
+            e.preventDefault();
+            setSaving(true);
+            try {
+                const created = await addRestaurantStaff(restaurant.restaurantId, form);
+                setCreatedStaff(created);
+                setForm(empty);
+                setShowForm(false);
+                flash(`Staff member ${created.firstName} added.`);
+                fetchStaff();
+            } catch (e) { flashError(e); }
+            finally { setSaving(false); }
+        };
+
+        const copyPassword = async () => {
+            if (!createdStaff?.password) return;
+            try {
+                if (navigator?.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(createdStaff.password);
+                } else {
+                    const input = document.createElement('input');
+                    input.value = createdStaff.password;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(input);
+                }
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1800);
+            } catch {
+                setError('Could not copy password. Please copy it manually.');
+                setTimeout(() => setError(''), 2500);
+            }
+        };
+
+        return (
+            <div>
+                <div className="rd-tab-header">
+                    <h3>Staff ({staffMembers.length})</h3>
+                    {!showForm && (
+                        <button className="rd-btn rd-btn-primary" onClick={() => setShowForm(true)}>
+                            + Add Staff
+                        </button>
+                    )}
+                </div>
+
+                {createdStaff && (
+                    <div className="rd-staff-created">
+                        <div>
+                            <div className="rd-staff-created-title">Temporary password generated</div>
+                            <div className="rd-staff-created-row">
+                                <code>{createdStaff.password}</code>
+                                <button className="rd-btn rd-btn-outline rd-btn-sm" onClick={copyPassword} type="button">
+                                    {copied ? 'Copied' : 'Copy'}
+                                </button>
+                            </div>
+                            <p>Share this once. Staff will be asked to change it after login.</p>
+                        </div>
+                    </div>
+                )}
+
+                <AnimatePresence>
+                    {showForm && (
+                        <motion.form className="rd-inline-form" onSubmit={handleSave} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                            <div className="rd-form-row">
+                                <input placeholder="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} required />
+                                <input placeholder="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} required />
+                            </div>
+                            <div className="rd-form-row">
+                                <input type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+                                <input type="tel" placeholder="Phone (10 digits)" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} pattern="^(\\+91)?[6-9][0-9]{9}$" required />
+                            </div>
+                            <div className="rd-form-actions">
+                                <button type="submit" className="rd-btn rd-btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Create Staff'}</button>
+                                <button type="button" className="rd-btn rd-btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+                            </div>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
+
+                {staffMembers.length === 0 && !showForm ? (
+                    <div className="rd-empty-small"><p>No staff members yet.</p></div>
+                ) : (
+                    <div className="rd-list">
+                        {staffMembers.map((staff) => (
+                            <div key={staff.userId} className="rd-list-item rd-staff-row">
+                                <div className="rd-list-info">
+                                    <span className="rd-list-name">{staff.userName}</span>
+                                    <span className="rd-list-sub">ID: {staff.userId}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ═══════════════════════════════════════
     //  MESS PLANS TAB
     // ═══════════════════════════════════════
     const MessPlansTab = () => {
@@ -947,6 +1071,56 @@ const RestaurantDashboard = () => {
     };
 
     // ═══════════════════════════════════════
+    //  KITCHEN TAB
+    // ═══════════════════════════════════════
+    const KitchenTab = () => {
+        const handleKitchenUpdate = async (e) => {
+            e.preventDefault();
+            if (!restaurant?.restaurantId) return;
+
+            setKitchenBusy(true);
+            try {
+                const response = await updateKitchenStatus(restaurant.restaurantId, kitchenLoadIndicator);
+                setKitchenResponse(response);
+                flash('Kitchen load updated.');
+            } catch (e) { flashError(e); }
+            finally { setKitchenBusy(false); }
+        };
+
+        return (
+            <div className="rd-kitchen-wrap">
+                <form className="rd-kitchen-form" onSubmit={handleKitchenUpdate}>
+                    <h3>Kitchen Controller</h3>
+                    <p>Restaurant: <strong>{restaurant?.restaurantName || '—'}</strong></p>
+
+                    <label>Kitchen Load</label>
+                    <select value={kitchenLoadIndicator} onChange={e => setKitchenLoadIndicator(e.target.value)}>
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM">MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                    </select>
+
+                    <button type="submit" className="rd-btn rd-btn-primary" disabled={kitchenBusy}>
+                        {kitchenBusy ? 'Updating...' : 'Update Kitchen Status'}
+                    </button>
+                </form>
+
+                {kitchenResponse && (
+                    <div className="rd-kitchen-card">
+                        <h4>{kitchenResponse.restaurantName}</h4>
+                        <div className="rd-kitchen-meta">
+                            <span>Restaurant ID: {kitchenResponse.restaurantId}</span>
+                            <span>Current Orders: {kitchenResponse.currentOrders}</span>
+                        </div>
+                        <span className="rd-kitchen-badge">Load: {kitchenResponse.kitchenLoadStatus}</span>
+                        <p>{kitchenResponse.message}</p>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ═══════════════════════════════════════
     //  ORDERS TAB
     // ═══════════════════════════════════════
     const VALID_TRANSITIONS = {
@@ -1123,7 +1297,9 @@ const RestaurantDashboard = () => {
                 {/* Tab Content */}
                 <div className="rd-tab-content">
                     {activeTab === 'restaurant' && <RestaurantTab />}
+                    {activeTab === 'staff' && (restaurant ? <StaffTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'orders' && <OrdersTab />}
+                    {activeTab === 'kitchen' && (restaurant ? <KitchenTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'categories' && (restaurant ? <CategoriesTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'foods' && (restaurant ? <FoodsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'addons' && (restaurant ? <AddonsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}

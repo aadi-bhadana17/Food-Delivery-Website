@@ -28,6 +28,17 @@ export const updateRestaurantStatus = async (id, open) => {
     return response.data;
 };
 
+// ── Staff ──
+export const getRestaurantStaff = async (restaurantId) => {
+    const response = await api.get(`${BASE}/${restaurantId}/staff`);
+    return response.data;
+};
+
+export const addRestaurantStaff = async (restaurantId, data) => {
+    const response = await api.post(`${BASE}/${restaurantId}/staff`, data);
+    return response.data;
+};
+
 // ── Categories ──
 export const getCategories = async (restaurantId) => {
     const response = await api.get(`${BASE}/${restaurantId}/categories`);
