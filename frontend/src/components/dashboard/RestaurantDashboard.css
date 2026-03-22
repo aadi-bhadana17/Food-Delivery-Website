@@ -867,6 +867,104 @@
     flex-wrap: wrap;
 }
 
+/* ── Group Deals ── */
+.rd-groupdeal-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.rd-groupdeal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rd-groupdeal-food-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rd-form-help {
+    font-size: 0.82rem;
+    color: var(--gray, #6B7280);
+}
+
+.rd-groupdeal-food-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.rd-check-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid var(--border, #E5E7EB);
+    border-radius: 10px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.84rem;
+    color: var(--dark, #1F2937);
+}
+
+.rd-groupdeal-tier-wrap {
+    background: var(--surface-hover, #F3F4F6);
+    border-radius: 10px;
+    padding: 0.65rem;
+}
+
+.rd-groupdeal-tier-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.55rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.rd-groupdeal-table-wrap {
+    overflow-x: auto;
+}
+
+.rd-groupdeal-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface, #FFFFFF);
+    border: 1px solid var(--border, #E5E7EB);
+    border-radius: 12px;
+}
+
+.rd-groupdeal-table th,
+.rd-groupdeal-table td {
+    text-align: left;
+    padding: 0.7rem;
+    border-bottom: 1px solid var(--border, #E5E7EB);
+    font-size: 0.86rem;
+}
+
+.rd-groupdeal-table th {
+    color: var(--gray, #6B7280);
+    font-weight: 600;
+}
+
+.rd-groupdeal-name {
+    font-weight: 600;
+    color: var(--dark, #1F2937);
+}
+
+.rd-groupdeal-sub {
+    margin-top: 0.2rem;
+    font-size: 0.77rem;
+    color: var(--gray, #6B7280);
+}
+
+.rd-groupdeal-row-actions {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
     .rd-tabs {
@@ -893,6 +991,10 @@
 
     .rd-list-actions {
         align-self: flex-end;
+    }
+
+    .rd-groupdeal-food-grid {
+        grid-template-columns: 1fr;
     }
 }
 

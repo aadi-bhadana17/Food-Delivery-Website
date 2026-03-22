@@ -70,14 +70,14 @@
 
 .ocp-message-staff {
     margin-left: auto;
-    background: #B8D9F5;
-    border: 1px solid #A9CDEB;
+    background: #DDE8F5;
+    border: 1px solid transparent;
 }
 
 .ocp-message-customer {
     margin-right: auto;
-    background: #DDEEFF;
-    border: 1px solid #C9E1F8;
+    background: #FFFFFF;
+    border: 1px solid #E2EBF5;
 }
 
 .ocp-meta {
@@ -124,29 +124,28 @@
 }
 
 [data-theme="dark"] .ocp-messages {
-    background: #F0F7FF;
+    background: transparent;
 }
 
 [data-theme="dark"] .ocp-message-staff {
-    background: #B8D9F5;
-    border-color: #A9CDEB;
+    background: #2D3748;
 }
 
 [data-theme="dark"] .ocp-message-customer {
-    background: #DDEEFF;
-    border-color: #C9E1F8;
+    background: #1A202C;
+    border-color: transparent;
 }
 
 [data-theme="dark"] .ocp-message-staff .ocp-sender,
 [data-theme="dark"] .ocp-message-staff .ocp-time,
 [data-theme="dark"] .ocp-message-staff p {
-    color: #1F2937;
+    color: #E2E8F0;
 }
 
 [data-theme="dark"] .ocp-message-customer .ocp-sender,
 [data-theme="dark"] .ocp-message-customer .ocp-time,
 [data-theme="dark"] .ocp-message-customer p {
-    color: #1F2937;
+    color: #CBD5E0;
 }
 
 .ocp-form {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
     getMyRestaurants, createRestaurant, updateRestaurant, updateRestaurantStatus,
     getRestaurantStaff, addRestaurantStaff,
@@ -7,6 +8,7 @@ import {
     getAddons, createAddon, updateAddon, updateAddonAvailability, deleteAddon,
     getMessPlans, createMessPlan, getMessPlanById, updateMessPlan, deleteMessPlan,
 } from '../../api/restaurantService';
+import { createGroupDeal, deleteGroupDeal, getGroupDealsByRestaurant } from '../../api/groupDealService';
 import { getRestaurantOrders, updateOrderStatus } from '../../api/orderService';
 import { updateKitchenStatus } from '../../api/kitchenService';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +17,7 @@ import './RestaurantDashboard.css';
 const CUISINE_TYPES = ['INDIAN', 'CHINESE', 'ITALIAN', 'MEXICAN', 'CONTINENTAL', 'AMERICAN'];
 const DAY_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'SNACKS', 'DINNER'];
-const TABS = ['restaurant', 'staff', 'orders', 'kitchen', 'categories', 'foods', 'addons', 'messPlans'];
+const TABS = ['restaurant', 'staff', 'orders', 'kitchen', 'categories', 'foods', 'addons', 'messPlans', 'groupDeals'];
 const TAB_LABELS = {
     restaurant: '🏪 Restaurant',
     staff: '👥 Staff',
@@ -24,7 +26,8 @@ const TAB_LABELS = {
     categories: '📂 Categories',
     foods: '🍕 Foods',
     addons: '🧩 Addons',
-    messPlans: '📅 Mess Plans'
+    messPlans: '📅 Mess Plans',
+    groupDeals: '🤝 Group Deals'
 };
 
 const normalizeMessPlan = (plan) => ({
@@ -37,6 +40,14 @@ const normalizeMessPlansPayload = (payload) => {
     if (Array.isArray(payload?.content)) return payload.content.map(normalizeMessPlan);
     if (Array.isArray(payload?.data)) return payload.data.map(normalizeMessPlan);
     if (Array.isArray(payload?.messPlans)) return payload.messPlans.map(normalizeMessPlan);
+    return [];
+};
+
+const normalizeGroupDealsPayload = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.content)) return payload.content;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.deals)) return payload.deals;
     return [];
 };
 
@@ -54,6 +65,8 @@ const RestaurantDashboard = () => {
     const [addons, setAddons] = useState([]);
     const [orders, setOrders] = useState([]);
     const [messPlans, setMessPlans] = useState([]);
+    const [groupDeals, setGroupDeals] = useState([]);
+    const [groupDealsLoading, setGroupDealsLoading] = useState(false);
     const [staffMembers, setStaffMembers] = useState([]);
     const [createdStaff, setCreatedStaff] = useState(null);
     const [kitchenLoadIndicator, setKitchenLoadIndicator] = useState('MEDIUM');
@@ -75,6 +88,10 @@ const RestaurantDashboard = () => {
             if (activeTab === 'messPlans') {
                 fetchFoods();
                 fetchMessPlans();
+            }
+            if (activeTab === 'groupDeals') {
+                fetchFoods();
+                fetchGroupDeals();
             }
         }
         if (activeTab === 'orders') fetchOrders();
@@ -137,6 +154,17 @@ const RestaurantDashboard = () => {
             setMessPlans(normalizeMessPlansPayload(payload));
         }
         catch (e) { flashError(e); }
+    };
+
+    // ── Group Deals ──
+    const fetchGroupDeals = async () => {
+        if (!restaurant) return;
+        setGroupDealsLoading(true);
+        try {
+            const payload = await getGroupDealsByRestaurant(restaurant.restaurantId);
+            setGroupDeals(normalizeGroupDealsPayload(payload));
+        } catch (e) { flashError(e); }
+        finally { setGroupDealsLoading(false); }
     };
 
     // ═══════════════════════════════════════
@@ -1071,6 +1099,364 @@ const RestaurantDashboard = () => {
     };
 
     // ═══════════════════════════════════════
+    //  GROUP DEALS TAB
+    // ═══════════════════════════════════════
+    const GroupDealsTab = () => {
+        const toDateTimeLocalValue = (date = new Date()) => {
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
+        };
+
+        const toApiDate = (dateTimeLocal) => (dateTimeLocal ? `${dateTimeLocal}:00` : dateTimeLocal);
+        const parseFoodPrice = (food) => Number(food?.price ?? food?.foodPrice ?? 0);
+        const parseFoodId = (food) => Number(food?.id ?? food?.foodId);
+        const parseFoodLabel = (food) => food?.name || food?.foodName || `Food #${parseFoodId(food)}`;
+        const isFiveMinuteStep = (dateTimeLocal) => Number(dateTimeLocal?.split(':')?.[1] || 0) % 5 === 0;
+        const isEditableStatus = (status) => status === 'VOTING' || status === 'CONFIRMATION_WINDOW';
+
+        const [showCreateForm, setShowCreateForm] = useState(false);
+        const [saving, setSaving] = useState(false);
+        const [deletingId, setDeletingId] = useState(null);
+        const [form, setForm] = useState({
+            dealName: '',
+            foodIds: [],
+            originalPrice: '',
+            targetParticipation: 10,
+            startTime: toDateTimeLocalValue(new Date(Date.now() + 30 * 60000)),
+            endTime: toDateTimeLocalValue(new Date(Date.now() + 24 * 3600000)),
+            maxDiscount: 30,
+            discountList: [{ thresholdPercent: 50, discountPercent: 10 }],
+        });
+
+        useEffect(() => {
+            const selectedFoodPrices = foods
+                .filter((food) => form.foodIds.includes(Number(food?.id ?? food?.foodId)))
+                .reduce((total, food) => total + Number(food?.price ?? food?.foodPrice ?? 0), 0);
+
+            if (!Number.isFinite(selectedFoodPrices)) return;
+
+            setForm((prev) => ({
+                ...prev,
+                originalPrice: selectedFoodPrices ? selectedFoodPrices.toFixed(2) : '',
+            }));
+        }, [form.foodIds, foods]);
+
+        const toggleFood = (foodId) => {
+            setForm((prev) => ({
+                ...prev,
+                foodIds: prev.foodIds.includes(foodId)
+                    ? prev.foodIds.filter((id) => id !== foodId)
+                    : [...prev.foodIds, foodId],
+            }));
+        };
+
+        const updateTier = (index, field, value) => {
+            setForm((prev) => ({
+                ...prev,
+                discountList: prev.discountList.map((tier, tierIndex) => (
+                    tierIndex === index
+                        ? { ...tier, [field]: Number(value) }
+                        : tier
+                )),
+            }));
+        };
+
+        const addTier = () => {
+            setForm((prev) => ({
+                ...prev,
+                discountList: [...prev.discountList, { thresholdPercent: 0, discountPercent: 0 }],
+            }));
+        };
+
+        const removeTier = (index) => {
+            setForm((prev) => ({
+                ...prev,
+                discountList: prev.discountList.filter((_, tierIndex) => tierIndex !== index),
+            }));
+        };
+
+        const validateForm = () => {
+            if (!form.dealName.trim()) return 'Deal name is required.';
+            if (!form.foodIds.length) return 'Select at least one food item for the bundle.';
+            if (Number(form.originalPrice || 0) <= 0) return 'Original price must be greater than 0.';
+            if (Number(form.targetParticipation || 0) <= 0) return 'Target participation must be at least 1.';
+            if (!isFiveMinuteStep(form.startTime) || !isFiveMinuteStep(form.endTime)) return 'Start and end times must be in 5-minute intervals.';
+            if (new Date(form.endTime).getTime() <= new Date(form.startTime).getTime()) return 'End time must be after start time.';
+            if (Number(form.maxDiscount || 0) <= 0 || Number(form.maxDiscount || 0) > 100) return 'Max discount must be between 1 and 100.';
+
+            for (const tier of form.discountList) {
+                if (Number(tier.thresholdPercent) < 1 || Number(tier.thresholdPercent) > 100) {
+                    return 'Tier threshold must be between 1 and 100.';
+                }
+                if (Number(tier.discountPercent) < 1 || Number(tier.discountPercent) > Number(form.maxDiscount)) {
+                    return 'Each tier discount must be between 1 and max discount.';
+                }
+            }
+
+            return '';
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            const validationError = validateForm();
+            if (validationError) {
+                flashError({ response: { data: validationError } });
+                return;
+            }
+
+            setSaving(true);
+            try {
+                const payload = {
+                    dealName: form.dealName.trim(),
+                    foodIds: form.foodIds,
+                    originalPrice: Number(form.originalPrice),
+                    targetParticipation: Number(form.targetParticipation),
+                    startTime: toApiDate(form.startTime),
+                    endTime: toApiDate(form.endTime),
+                    maxDiscount: Number(form.maxDiscount),
+                    discountList: form.discountList.map((tier) => ({
+                        thresholdPercent: Number(tier.thresholdPercent),
+                        discountPercent: Number(tier.discountPercent),
+                    })),
+                };
+
+                await createGroupDeal(restaurant.restaurantId, payload);
+                flash('Group deal created successfully.');
+                setShowCreateForm(false);
+                setForm((prev) => ({
+                    ...prev,
+                    dealName: '',
+                    foodIds: [],
+                    originalPrice: '',
+                    targetParticipation: 10,
+                    startTime: toDateTimeLocalValue(new Date(Date.now() + 30 * 60000)),
+                    endTime: toDateTimeLocalValue(new Date(Date.now() + 24 * 3600000)),
+                    maxDiscount: 30,
+                    discountList: [{ thresholdPercent: 50, discountPercent: 10 }],
+                }));
+                fetchGroupDeals();
+            } catch (e) { flashError(e); }
+            finally { setSaving(false); }
+        };
+
+        const handleDelete = async (deal) => {
+            if (!window.confirm(`Delete deal "${deal.dealName}"?`)) return;
+
+            setDeletingId(deal.dealId);
+            try {
+                await deleteGroupDeal(restaurant.restaurantId, deal.dealId);
+                flash('Group deal deleted.');
+                fetchGroupDeals();
+            } catch (e) { flashError(e); }
+            finally { setDeletingId(null); }
+        };
+
+        return (
+            <div>
+                <div className="rd-tab-header">
+                    <h3>Group Deals ({groupDeals.length})</h3>
+                    <div className="rd-groupdeal-header-actions">
+                        <button className="rd-btn rd-btn-outline" onClick={fetchGroupDeals}>↻ Refresh</button>
+                        <button className="rd-btn rd-btn-primary" onClick={() => setShowCreateForm((prev) => !prev)}>
+                            {showCreateForm ? 'Close Form' : '+ Create Deal'}
+                        </button>
+                    </div>
+                </div>
+
+                <AnimatePresence>
+                    {showCreateForm && (
+                        <motion.form
+                            className="rd-inline-form rd-groupdeal-form"
+                            onSubmit={handleSubmit}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                        >
+                            <input
+                                placeholder="e.g. The Lunch Rush Deal"
+                                value={form.dealName}
+                                onChange={(e) => setForm({ ...form, dealName: e.target.value })}
+                                required
+                            />
+
+                            <div className="rd-groupdeal-food-select">
+                                <span className="rd-form-help">Select foods for bundle</span>
+                                <div className="rd-groupdeal-food-grid">
+                                    {foods.map((food) => {
+                                        const foodId = parseFoodId(food);
+                                        const checked = form.foodIds.includes(foodId);
+                                        return (
+                                            <label key={foodId} className="rd-check-chip">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleFood(foodId)}
+                                                />
+                                                <span>{parseFoodLabel(food)} (Rs {parseFoodPrice(food).toFixed(2)})</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="rd-form-row">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="e.g. 499.00"
+                                    value={form.originalPrice}
+                                    onChange={(e) => setForm({ ...form, originalPrice: e.target.value })}
+                                    required
+                                />
+                                <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="e.g. 20"
+                                    value={form.targetParticipation}
+                                    onChange={(e) => setForm({ ...form, targetParticipation: Number(e.target.value) })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="rd-form-row">
+                                <div>
+                                    <input
+                                        type="datetime-local"
+                                        step="300"
+                                        value={form.startTime}
+                                        onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                                        required
+                                    />
+                                    <span className="rd-form-help">Select time in 5-minute intervals</span>
+                                </div>
+                                <div>
+                                    <input
+                                        type="datetime-local"
+                                        step="300"
+                                        value={form.endTime}
+                                        onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                                        required
+                                    />
+                                    <span className="rd-form-help">Select time in 5-minute intervals</span>
+                                </div>
+                            </div>
+
+                            <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                placeholder="e.g. 25"
+                                value={form.maxDiscount}
+                                onChange={(e) => setForm({ ...form, maxDiscount: Number(e.target.value) })}
+                                required
+                            />
+
+                            <div className="rd-groupdeal-tier-wrap">
+                                <div className="rd-groupdeal-tier-head">
+                                    <span>Discount Tiers</span>
+                                    <button type="button" className="rd-btn rd-btn-outline rd-btn-sm" onClick={addTier}>+ Add Tier</button>
+                                </div>
+
+                                {form.discountList.map((tier, index) => (
+                                    <div className="rd-form-row" key={`tier-${index}`}>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            placeholder="e.g. 50"
+                                            value={tier.thresholdPercent}
+                                            onChange={(e) => updateTier(index, 'thresholdPercent', e.target.value)}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max={form.maxDiscount}
+                                            placeholder="e.g. 10"
+                                            value={tier.discountPercent}
+                                            onChange={(e) => updateTier(index, 'discountPercent', e.target.value)}
+                                            required
+                                        />
+                                        {form.discountList.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="rd-btn rd-btn-danger rd-btn-sm"
+                                                onClick={() => removeTier(index)}
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="rd-form-actions">
+                                <button type="submit" className="rd-btn rd-btn-primary" disabled={saving}>
+                                    {saving ? 'Saving...' : 'Create Group Deal'}
+                                </button>
+                                <button type="button" className="rd-btn rd-btn-outline" onClick={() => setShowCreateForm(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
+
+                {groupDealsLoading ? (
+                    <div className="rd-empty-small"><p>Loading deals...</p></div>
+                ) : groupDeals.length === 0 ? (
+                    <div className="rd-empty-small"><p>No active group deals yet.</p></div>
+                ) : (
+                    <div className="rd-groupdeal-table-wrap">
+                        <table className="rd-groupdeal-table">
+                            <thead>
+                                <tr>
+                                    <th>Deal</th>
+                                    <th>Status</th>
+                                    <th>Participation</th>
+                                    <th>Current Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {groupDeals.map((deal) => (
+                                    <tr key={deal.dealId}>
+                                        <td>
+                                            <div className="rd-groupdeal-name">{deal.dealName}</div>
+                                            <div className="rd-groupdeal-sub">
+                                                Ends {deal.endTime ? new Date(deal.endTime).toLocaleString() : 'Unknown'}
+                                            </div>
+                                        </td>
+                                        <td>{deal.status}</td>
+                                        <td>{deal.currentParticipation || 0}/{deal.targetParticipation || 0}</td>
+                                        <td>Rs {Number(deal.currentPrice || 0).toFixed(2)}</td>
+                                        <td>
+                                            <div className="rd-groupdeal-row-actions">
+                                                <Link className="rd-btn rd-btn-outline rd-btn-sm" to={`/restaurants/${restaurant.restaurantId}/group-deals/${deal.dealId}`}>
+                                                    View
+                                                </Link>
+                                                <button
+                                                    className="rd-btn rd-btn-danger rd-btn-sm"
+                                                    onClick={() => handleDelete(deal)}
+                                                    disabled={deletingId === deal.dealId || !isEditableStatus(deal.status)}
+                                                    title={!isEditableStatus(deal.status) ? 'Only active deals can be deleted.' : ''}
+                                                >
+                                                    {deletingId === deal.dealId ? 'Deleting...' : 'Delete'}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // ═══════════════════════════════════════
     //  KITCHEN TAB
     // ═══════════════════════════════════════
     const KitchenTab = () => {
@@ -1304,6 +1690,7 @@ const RestaurantDashboard = () => {
                     {activeTab === 'foods' && (restaurant ? <FoodsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'addons' && (restaurant ? <AddonsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                     {activeTab === 'messPlans' && (restaurant ? <MessPlansTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
+                    {activeTab === 'groupDeals' && (restaurant ? <GroupDealsTab /> : <div className="rd-empty-small"><p>Create a restaurant first.</p></div>)}
                 </div>
             </div>
         </div>

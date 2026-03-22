@@ -3,7 +3,7 @@ import api from './axiosConfig';
 const USER_BASE = '/api/users';
 
 export const getUserProfile = async () => {
-    const response = await api.get(`${USER_BASE}/profile`);
+    const response = await api.get(`${USER_BASE}/profile`, { params: { _t: Date.now() } });
     return response.data;
 };
 

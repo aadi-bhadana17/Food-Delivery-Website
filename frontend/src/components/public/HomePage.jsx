@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getRestaurants, searchRestaurants } from '../../api/publicService';
+import { getRestaurants, searchRestaurants, getPublicGroupDeals } from '../../api/publicService';
 import { getFavourites, addFavourite, removeFavourite } from '../../api/userService';
 import { AuthContext } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,6 +31,45 @@ const ADMIN_GREETINGS = [
     "Boss mode activated. Let's go.",
 ];
 
+const DEAL_STATUS_LABELS = {
+    VOTING: 'Voting',
+    CONFIRMATION_WINDOW: 'Confirmation',
+    FULFILLED: 'Fulfilled',
+    EXPIRED: 'Expired',
+};
+
+const dealStatusClass = (status) => {
+    if (status === 'VOTING') return 'deal-badge-voting';
+    if (status === 'CONFIRMATION_WINDOW') return 'deal-badge-confirmation';
+    if (status === 'FULFILLED') return 'deal-badge-fulfilled';
+    return 'deal-badge-expired';
+};
+
+const getDealTargetTime = (deal) => {
+    if (deal?.status === 'VOTING') return deal.endTime;
+    if (deal?.status === 'CONFIRMATION_WINDOW') return deal.confirmationWindowEndTime;
+    return null;
+};
+
+const formatCountdown = (target, nowMs) => {
+    if (!target) return 'Ended';
+
+    const diff = new Date(target).getTime() - nowMs;
+    if (diff <= 0) return 'Ended';
+
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+
+    return `${hours}h ${minutes}m ${seconds}s`;
+};
+
+const formatMoney = (value) => `Rs ${Number(value || 0).toFixed(2)}`;
+
+const getRestaurantLabelFromDeal = (deal, fallback) => {
+    return deal?.restaurant?.restaurantName || deal?.restaurant?.name || fallback || 'Restaurant';
+};
+
 const HomePage = () => {
     const { user } = useContext(AuthContext);
     const ownerGreeting = useMemo(() => OWNER_GREETINGS[Math.floor(Math.random() * OWNER_GREETINGS.length)], []);
@@ -43,7 +82,11 @@ const HomePage = () => {
     const [favouriteIds, setFavouriteIds] = useState(new Set());
     const [togglingFav, setTogglingFav] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searching, setSearching] = useState(false);
+    const [, setSearching] = useState(false);
+    const [dealCards, setDealCards] = useState([]);
+    const [dealsLoading, setDealsLoading] = useState(false);
+    const [dealsError, setDealsError] = useState('');
+    const [nowMs, setNowMs] = useState(Date.now());
 
     useEffect(() => {
         if (user) {
@@ -63,6 +106,68 @@ const HomePage = () => {
         const timeout = setTimeout(() => handleSearch(), 400);
         return () => clearTimeout(timeout);
     }, [searchQuery]);
+
+    useEffect(() => {
+        const interval = setInterval(() => setNowMs(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (!user || favouriteIds.size === 0) {
+            setDealCards([]);
+            setDealsError('');
+            setDealsLoading(false);
+            return;
+        }
+
+        const fetchDealsFromFavourites = async () => {
+            setDealsLoading(true);
+            setDealsError('');
+
+            const restaurantNameMap = new Map(
+                restaurants.map((restaurant) => [restaurant.id, restaurant.name])
+            );
+
+            const favouriteRestaurantIds = Array.from(favouriteIds);
+
+            try {
+                const responses = await Promise.allSettled(
+                    favouriteRestaurantIds.map((restaurantId) => getPublicGroupDeals(restaurantId))
+                );
+
+                const nextDeals = [];
+
+                responses.forEach((response, index) => {
+                    if (response.status !== 'fulfilled') return;
+
+                    const restaurantId = favouriteRestaurantIds[index];
+                    const payload = Array.isArray(response.value)
+                        ? response.value
+                        : Array.isArray(response.value?.content)
+                            ? response.value.content
+                            : [];
+
+                    payload.forEach((deal) => {
+                        nextDeals.push({
+                            ...deal,
+                            restaurantId,
+                            restaurantName: getRestaurantLabelFromDeal(deal, restaurantNameMap.get(restaurantId)),
+                        });
+                    });
+                });
+
+                nextDeals.sort((a, b) => new Date(a.endTime || 0) - new Date(b.endTime || 0));
+                setDealCards(nextDeals);
+            } catch {
+                setDealsError('Unable to load group deals right now.');
+                setDealCards([]);
+            } finally {
+                setDealsLoading(false);
+            }
+        };
+
+        fetchDealsFromFavourites();
+    }, [user, favouriteIds, restaurants]);
 
     const fetchRestaurants = async () => {
         setLoading(true);
@@ -200,6 +305,86 @@ const HomePage = () => {
             </section>
 
             {/* Restaurant Grid */}
+            <section className="home-section home-deals-section">
+                <div className="section-header">
+                    <h2 className="section-title">Group Deals from Your Favourites</h2>
+                    <span className="section-count">{dealCards.length} active</span>
+                </div>
+
+                {dealsError && <div className="home-error">{dealsError}</div>}
+
+                {!user ? (
+                    <div className="home-empty compact">
+                        <h3>Login to unlock deal ads</h3>
+                        <p>Group deals are personalised from your favourite restaurants.</p>
+                    </div>
+                ) : dealsLoading ? (
+                    <div className="home-deals-scroll">
+                        {[1, 2, 3].map((item) => (
+                            <div className="deal-ad-card skeleton" key={item}>
+                                <div className="r-line-skeleton wide"></div>
+                                <div className="r-line-skeleton"></div>
+                                <div className="r-line-skeleton narrow"></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : dealCards.length === 0 ? (
+                    <div className="home-empty compact">
+                        <h3>No active group deals yet</h3>
+                        <p>Add favourites and check again for new voting bundles.</p>
+                    </div>
+                ) : (
+                    <div className="home-deals-scroll">
+                        {dealCards.map((deal) => {
+                            const participation = Number(deal.currentParticipation || 0);
+                            const target = Number(deal.targetParticipation || 0);
+                            const progress = target > 0 ? Math.min(100, (participation / target) * 100) : 0;
+                            const countdown = formatCountdown(getDealTargetTime(deal), nowMs);
+                            const foodSummary = (deal.foodList || [])
+                                .slice(0, 3)
+                                .map((food) => food.foodName || food.name)
+                                .filter(Boolean)
+                                .join(', ');
+
+                            return (
+                                <Link
+                                    key={`${deal.restaurantId}-${deal.dealId}`}
+                                    className="deal-ad-link"
+                                    to={`/restaurants/${deal.restaurantId}/group-deals/${deal.dealId}`}
+                                >
+                                    <article className="deal-ad-card">
+                                        <div className="deal-ad-top">
+                                            <h3>{deal.dealName}</h3>
+                                            <span className={`deal-badge ${dealStatusClass(deal.status)}`}>
+                                                {DEAL_STATUS_LABELS[deal.status] || deal.status}
+                                            </span>
+                                        </div>
+
+                                        <p className="deal-restaurant-name">{deal.restaurantName}</p>
+                                        <p className="deal-food-list">{foodSummary || 'Bundle details available on detail page.'}</p>
+
+                                        <div className="deal-prices">
+                                            <span className="deal-original">{formatMoney(deal.originalPrice)}</span>
+                                            <strong>{formatMoney(deal.currentPrice)}</strong>
+                                        </div>
+
+                                        <div className="deal-progress-head">
+                                            <span>{participation}/{target} joined</span>
+                                            <span>{progress.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="deal-progress-track">
+                                            <div className="deal-progress-fill" style={{ width: `${progress}%` }} />
+                                        </div>
+
+                                        <div className="deal-time-left">Time left: {countdown}</div>
+                                    </article>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+
             <section className="home-section">
                 <div className="section-header">
                     <h2 className="section-title">

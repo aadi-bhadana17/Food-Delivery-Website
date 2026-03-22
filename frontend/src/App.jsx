@@ -10,6 +10,7 @@ import RestaurantPage from './components/public/RestaurantPage';
 import CartPage from './components/cart/CartPage';
 import OrdersPage from './components/orders/OrdersPage';
 import OrderDetailPage from './components/orders/OrderDetailPage';
+import GroupDealDetailPage from './components/deals/GroupDealDetailPage';
 import RestaurantDashboard from './components/dashboard/RestaurantDashboard';
 import RestaurantStaffDashboard from './components/dashboard/RestaurantStaffDashboard';
 import AdminDashboard from './components/dashboard/AdminDashboard';
@@ -98,6 +99,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER, ROLES.RESTAURANT_STAFF]}>
                 <WithNavbar><OrderDetailPage /></WithNavbar>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurants/:restaurantId/group-deals/:dealId"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.ADMIN, ROLES.RESTAURANT_OWNER, ROLES.RESTAURANT_STAFF]}>
+                <WithNavbar><GroupDealDetailPage /></WithNavbar>
               </ProtectedRoute>
             }
           />

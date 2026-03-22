@@ -27,3 +27,8 @@ export const searchRestaurants = async (query) => {
     return response.data;
 };
 
+export const getPublicGroupDeals = async (restaurantId) => {
+    const response = await api.get(`${PUBLIC_BASE}/restaurants/${restaurantId}/group-deals`);
+    return response.data;
+};
+

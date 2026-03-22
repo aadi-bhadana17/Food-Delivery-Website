@@ -458,6 +458,147 @@
     background: rgba(255, 255, 255, 0.95);
 }
 
+/* ----- Group Deal Ads ----- */
+.home-deals-section {
+    padding-top: 0.75rem;
+}
+
+.home-deals-scroll {
+    display: flex;
+    gap: 0.85rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+}
+
+.deal-ad-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.deal-ad-card {
+    min-width: 290px;
+    max-width: 310px;
+    border-radius: 14px;
+    border: 1px solid var(--border, #E5E7EB);
+    background: var(--surface, #FFFFFF);
+    padding: 0.8rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.deal-ad-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px var(--card-shadow, rgba(0, 0, 0, 0.08));
+}
+
+.deal-ad-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.65rem;
+    align-items: flex-start;
+}
+
+.deal-ad-top h3 {
+    margin: 0;
+    font-size: 0.98rem;
+}
+
+.deal-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.25rem 0.5rem;
+    text-transform: uppercase;
+}
+
+.deal-badge-voting {
+    color: #1D4ED8;
+    background: #DBEAFE;
+}
+
+.deal-badge-confirmation {
+    color: #7C3AED;
+    background: #EDE9FE;
+}
+
+.deal-badge-fulfilled {
+    color: #166534;
+    background: #DCFCE7;
+}
+
+.deal-badge-expired {
+    color: #B91C1C;
+    background: #FEE2E2;
+}
+
+.deal-restaurant-name {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    color: var(--gray, #6B7280);
+}
+
+.deal-food-list {
+    margin: 0.35rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--dark, #1F2937);
+    min-height: 2.3em;
+}
+
+.deal-prices {
+    margin-top: 0.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.deal-original {
+    font-size: 0.82rem;
+    text-decoration: line-through;
+    color: var(--gray, #6B7280);
+}
+
+.deal-progress-head {
+    margin-top: 0.65rem;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--gray, #6B7280);
+}
+
+.deal-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface-hover, #F3F4F6);
+    margin-top: 0.3rem;
+    overflow: hidden;
+}
+
+.deal-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #60A5FA, #22C55E);
+    transition: width 0.45s ease;
+}
+
+.deal-time-left {
+    margin-top: 0.55rem;
+    font-size: 0.77rem;
+    color: var(--gray, #6B7280);
+}
+
+.home-empty.compact {
+    padding: 1.3rem 1rem;
+    border: 1px dashed var(--border, #E5E7EB);
+    border-radius: 12px;
+}
+
+.home-empty.compact h3 {
+    font-size: 1.08rem;
+}
+
+.home-empty.compact p {
+    font-size: 0.92rem;
+}
+
 /* ----- Footer ----- */
 .home-footer {
     text-align: center;
@@ -480,6 +621,10 @@
 
     .home-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .deal-ad-card {
+        min-width: 260px;
     }
 }
 

@@ -28,6 +28,23 @@ const ProfileDropdown = ({ open, onClose }) => {
     const [roleForm, setRoleForm] = useState({ requestedRole: 'RESTAURANT_OWNER', requestReason: '' });
     const [submittingRole, setSubmittingRole] = useState(false);
 
+    const formatMoney = (value) => {
+        if (value === null || value === undefined || value === '') return '—';
+        const numeric = Number(value);
+        if (Number.isNaN(numeric)) return '—';
+        return `Rs ${numeric.toFixed(2)}`;
+    };
+
+    const walletBalance =
+        profile?.walletBalance
+        ?? profile?.wallet_balance
+        ?? profile?.wallet
+        ?? profile?.balance
+        ?? user?.walletBalance
+        ?? user?.wallet_balance
+        ?? user?.wallet
+        ?? user?.balance;
+
     useEffect(() => {
         if (open) {
             fetchProfile();
@@ -207,6 +224,10 @@ const ProfileDropdown = ({ open, onClose }) => {
                                 <div className="pd-field">
                                     <span className="pd-field-label">Phone</span>
                                     <span className="pd-field-value">{profile?.phone || '—'}</span>
+                                </div>
+                                <div className="pd-field">
+                                    <span className="pd-field-label">Wallet Balance</span>
+                                    <span className="pd-field-value">{formatMoney(walletBalance)}</span>
                                 </div>
 
                                 <div className="pd-actions">
