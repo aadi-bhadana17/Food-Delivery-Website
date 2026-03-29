@@ -1,5 +1,6 @@
 package com.kilgore.fooddeliveryapp.service;
 
+import com.kilgore.fooddeliveryapp.authorization.UserAuthorization;
 import com.kilgore.fooddeliveryapp.dto.request.AddToCartRequest;
 import com.kilgore.fooddeliveryapp.dto.request.UpdateCartItemRequest;
 import com.kilgore.fooddeliveryapp.dto.response.CartResponse;
@@ -34,16 +35,24 @@ public class CartService {
     private final AddonRepository addonRepository;
     private final CartItemRepository cartItemRepository;
     private final PricingService pricingService;
+    private final UserAuthorization userAuthorization;
+    private final SharedCartRepository sharedCartRepository;
+    private final SharedCartMemberRepository sharedCartMemberRepository;
 
     public CartService(CartRepository cartRepository, UserRepository userRepository,
                        FoodRepository foodRepository, AddonRepository addonRepository,
-                       CartItemRepository cartItemRepository, PricingService pricingService) {
+                       CartItemRepository cartItemRepository, PricingService pricingService,
+                       UserAuthorization userAuthorization, SharedCartRepository sharedCartRepository,
+                       SharedCartMemberRepository sharedCartMemberRepository) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.foodRepository = foodRepository;
         this.addonRepository = addonRepository;
         this.cartItemRepository = cartItemRepository;
         this.pricingService = pricingService;
+        this.userAuthorization = userAuthorization;
+        this.sharedCartRepository = sharedCartRepository;
+        this.sharedCartMemberRepository = sharedCartMemberRepository;
     }
 
 
@@ -53,9 +62,8 @@ public class CartService {
     @Transactional
     public CartResponse addToCart(AddToCartRequest request) {
 
-        String username = authenticateUser();
-        User user = userRepository.findByEmail(username);
-        Cart cart = cartRepository.findByUser(user);
+        User user = userAuthorization.authorizeUser();
+        Cart cart = getWorkingCartForUser(user);
 
 
         if (cart == null) {
@@ -87,6 +95,7 @@ public class CartService {
         }
 
         addOrMergeCartItem(cart, food, addonList,  request);
+        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, false);
     }
@@ -96,7 +105,7 @@ public class CartService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName());
 
-        Cart cart = cartRepository.findByUser(user);
+        Cart cart = getWorkingCartForUser(user);
 
         boolean priceUpdated = false;
         if (cart != null) {
@@ -118,6 +127,7 @@ public class CartService {
 
         pricingService.updateCartTotal(cart);
         cartItemRepository.save(item);
+        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, true);
     }
@@ -129,6 +139,7 @@ public class CartService {
 
         cart.getItems().remove(item);
         pricingService.updateCartTotal(cart);
+        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, true);
     }
@@ -139,6 +150,7 @@ public class CartService {
 
         cart.getItems().clear();
         pricingService.updateCartTotal(cart);
+        updateSharedCartTotalPriceIfNeeded(cart);
 
         return "Cart has been cleared";
     }
@@ -154,7 +166,7 @@ public class CartService {
         return authentication.getName();
     }
 
-    private CartItem  verifyCartItem(Long cartItemId, Cart cart) {
+    public CartItem  verifyCartItem(Long cartItemId, Cart cart) {
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new EntityNotFoundException("No item found with id " + cartItemId));
 
@@ -171,7 +183,7 @@ public class CartService {
         String username = authentication.getName();
         User user = userRepository.findByEmail(username);
 
-        Cart cart = cartRepository.findByUser(user);
+        Cart cart = getWorkingCartForUser(user);
         if (cart == null) {
             throw new EntityNotFoundException("Cart not found");
         }
@@ -251,7 +263,7 @@ public class CartService {
     // ------------------------------------------------------------- HELPERS ------------------------------------------------------------------------------
 
 
-    private boolean haveSameAddons(List<Addon> list1,  List<Addon> list2) {
+    public boolean haveSameAddons(List<Addon> list1,  List<Addon> list2) {
         if(list1.size() != list2.size()) return false;
 
         Set<Long> set1 = list1.stream().map(Addon::getAddonId).collect(Collectors.toSet());
@@ -260,19 +272,19 @@ public class CartService {
         return set1.equals(set2);
     }
 
-    private Food extractFoodFromRequest(AddToCartRequest request) {
+    public Food extractFoodFromRequest(AddToCartRequest request) {
 
         return foodRepository.findById(request.getFoodId())
                 .orElseThrow(() -> new EntityNotFoundException("Food with id " + request.getFoodId() + " not found"));
     }
 
-    private List<Addon> extractAddonsFromRequest(AddToCartRequest request, Food food) {
+    public List<Addon> extractAddonsFromRequest(AddToCartRequest request, Food food) {
         return request.getAddonIds().stream()
                 .map((id) -> extractAddon(id, food))
                 .toList();
     }
 
-    private Addon extractAddon(Long addonId, Food food) {
+    public Addon extractAddon(Long addonId, Food food) {
         Addon addon = addonRepository.findById(addonId)
                 .orElseThrow(() -> new EntityNotFoundException("Addon with id " + addonId + " not found"));
 
@@ -304,7 +316,7 @@ public class CartService {
         return addon;
     }
 
-    private void addOrMergeCartItem(Cart cart, Food food, List<Addon> addonList, AddToCartRequest request) {
+    public void addOrMergeCartItem(Cart cart, Food food, List<Addon> addonList, AddToCartRequest request) {
 
         BigDecimal currentPrice = pricingService.calculateCurrentPrice(food, addonList);
 
@@ -339,10 +351,33 @@ public class CartService {
         cartRepository.save(cart);
     }
 
-    private int calculateTotalQuantity(Cart  cart) {
+    public int calculateTotalQuantity(Cart  cart) {
         return cart.getItems().stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();
+    }
+
+    private void updateSharedCartTotalPriceIfNeeded(Cart cart) {
+        if (cart == null || cart.getSharedCart() == null || !cart.getSharedCart().isActive()) return;
+
+        SharedCart sharedCart = cart.getSharedCart();
+        BigDecimal total = sharedCart.getMemberList().stream()
+                .filter(SharedCartMember::isActive)
+                .map(member -> member.getCart() != null && member.getCart().getTotalPrice() != null
+                        ? member.getCart().getTotalPrice()
+                        : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        sharedCart.setTotalPrice(total);
+        sharedCartRepository.save(sharedCart);
+    }
+
+    private Cart getWorkingCartForUser(User user) {
+        SharedCartMember activeMembership = sharedCartMemberRepository.findActiveMemberByUserId(user.getUserId());
+        if (activeMembership != null && activeMembership.getCart() != null) {
+            return activeMembership.getCart();
+        }
+        return cartRepository.findByUser(user);
     }
 
 }
