@@ -109,7 +109,7 @@ public class OrderService {
                 .toList();
     }
 
-    private OrderItem createOrderItem(CartItem cartItem,  Order order) {
+    protected OrderItem createOrderItem(CartItem cartItem,  Order order) {
 
         validateCartItems(cartItem);
 

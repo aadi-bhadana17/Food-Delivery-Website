@@ -1,5 +1,6 @@
 package com.kilgore.fooddeliveryapp.authorization;
 
+import com.kilgore.fooddeliveryapp.dto.summary.UserSummary;
 import com.kilgore.fooddeliveryapp.exceptions.EntityNotFoundException;
 import com.kilgore.fooddeliveryapp.model.User;
 import com.kilgore.fooddeliveryapp.repository.UserRepository;

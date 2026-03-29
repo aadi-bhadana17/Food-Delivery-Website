@@ -20,5 +20,5 @@ public class PlaceOrderRequest {
 
     @JsonProperty("isSpecial")
     @JsonAlias("special")
-    private boolean isSpecial; // Optional
+    private boolean isSpecial = false; // Optional
 }
