@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -21,4 +23,6 @@ public class Review {
     private User user;
     @ManyToOne
     private Restaurant restaurant;
+
+    private LocalDateTime postedAt;
 }
