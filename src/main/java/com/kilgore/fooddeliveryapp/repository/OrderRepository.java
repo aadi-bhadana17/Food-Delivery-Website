@@ -26,4 +26,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "WHERE o.orderType = com.kilgore.fooddeliveryapp.model.OrderType.PRE_ORDER " +
             "AND o.scheduledAt < :now AND o.orderStatus = :status")
     List<Order> findDuePreOrders(@Param("now") LocalDateTime now, @Param("status") OrderStatus status);
+
+    boolean existsByUserUserIdAndRestaurantRestaurantIdAndCreatedAtAfter(Long userId, Long restaurantId, LocalDateTime createdAt);
 }

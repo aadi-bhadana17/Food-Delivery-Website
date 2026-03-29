@@ -365,6 +365,57 @@
     font-size: 0.8rem;
 }
 
+/* Reviews */
+.cd-review-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.cd-review-card {
+    background: var(--surface, #FFFFFF);
+    border: 1px solid var(--border, #E5E7EB);
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.cd-review-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+}
+
+.cd-review-top h4 {
+    font-size: 0.98rem;
+    color: var(--dark, #1F2937);
+    font-weight: 700;
+}
+
+.cd-review-top span {
+    font-size: 0.78rem;
+    color: var(--gray, #6B7280);
+}
+
+.cd-review-rating {
+    color: #F59E0B;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.cd-review-rating span {
+    color: var(--gray, #6B7280);
+    font-weight: 500;
+    font-size: 0.82rem;
+}
+
+.cd-review-comment {
+    margin-top: 0.35rem;
+    color: var(--gray, #6B7280);
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
 /* Addresses */
 .cd-addr-list {
     display: flex;

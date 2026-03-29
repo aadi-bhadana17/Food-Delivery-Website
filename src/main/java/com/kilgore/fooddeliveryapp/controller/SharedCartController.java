@@ -18,11 +18,6 @@ public class SharedCartController {
         this.sharedCartService = sharedCartService;
     }
 
-    @GetMapping
-    public SharedCartResponse getSharedCart() {
-        return sharedCartService.getSharedCart();
-    }
-
     @GetMapping("/current")
     public SharedCartResponse getCurrentSharedCart() {
         return sharedCartService.getCurrentSharedCart();

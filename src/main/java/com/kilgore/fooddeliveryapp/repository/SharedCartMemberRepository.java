@@ -16,7 +16,8 @@ public interface SharedCartMemberRepository extends JpaRepository<SharedCartMemb
 
     @Query("SELECT mem FROM SharedCartMember mem " +
             "WHERE mem.user.userId = :userId " +
-            "AND mem.isActive = true")
+            "AND mem.isActive = true " +
+            "AND mem.sharedCart.isActive = true")
     SharedCartMember findActiveMemberByUserId(@Param("userId") Long userId);
 
 }

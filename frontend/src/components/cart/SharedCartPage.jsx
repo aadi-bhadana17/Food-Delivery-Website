@@ -28,6 +28,7 @@ const normalizeRestaurant = (restaurant) => ({
 const SharedCartPage = () => {
     const location = useLocation();
 
+    const [currentSharedCart, setCurrentSharedCart] = useState(null);
     const [sharedCart, setSharedCart] = useState(null);
     const [loading, setLoading] = useState(true);
     const [working, setWorking] = useState(false);
@@ -64,10 +65,12 @@ const SharedCartPage = () => {
 
     const viewerIsHost = Boolean(sharedCart?.viewerIsHost);
     const viewerIsMember = Boolean(sharedCart?.viewerIsMember);
+    const hasActiveCurrentSharedCart = Boolean(currentSharedCart && currentSharedCart.isActive);
 
     const hydrateCurrentCart = async () => {
         try {
             const cart = await getCurrentSharedCart();
+            setCurrentSharedCart(cart);
             setSharedCart(cart);
             setCodeInput(cart.joinCode || '');
         } catch (err) {
@@ -179,8 +182,10 @@ const SharedCartPage = () => {
         try {
             const created = await createSharedCart(Number(createRestaurantId), hostPaysAll);
             setSharedCart(created);
+            setCurrentSharedCart(created);
             setCodeInput(created.joinCode || '');
-            await refreshSharedCartByCode(created.joinCode);
+            const refreshed = await refreshSharedCartByCode(created.joinCode);
+            if (refreshed) setCurrentSharedCart(refreshed);
             setMessage('Shared cart is ready. Share the code with your friends.');
         } catch (err) {
             setError(getErrorText(err, 'Unable to create shared cart.'));
@@ -222,9 +227,11 @@ const SharedCartPage = () => {
         setMessage('');
         try {
             const joinMessage = await joinSharedCart(normalizedCode);
-            await updateCartByCode(normalizedCode);
+            const joined = await updateCartByCode(normalizedCode);
+            if (joined) setCurrentSharedCart(joined);
             setCodeInput(normalizedCode);
-            await refreshSharedCartByCode(normalizedCode);
+            const refreshed = await refreshSharedCartByCode(normalizedCode);
+            if (refreshed) setCurrentSharedCart(refreshed);
             setMessage(typeof joinMessage === 'string' ? joinMessage : 'Joined shared cart successfully.');
         } catch (err) {
             setError(getErrorText(err, 'Unable to join this shared cart.'));
@@ -278,6 +285,9 @@ const SharedCartPage = () => {
             setMessage(typeof response === 'string' ? response : 'Shared cart checked out successfully.');
             const refreshed = await getSharedCartByCode(sharedCart.joinCode);
             setSharedCart(refreshed);
+            if (currentSharedCart?.joinCode === refreshed?.joinCode) {
+                setCurrentSharedCart(refreshed);
+            }
         } catch (err) {
             setError(getErrorText(err, 'Unable to checkout shared cart.'));
         } finally {
@@ -304,6 +314,7 @@ const SharedCartPage = () => {
                 await refreshSharedCartByCode(sharedCart.joinCode);
             } else {
                 const current = await getCurrentSharedCart();
+                setCurrentSharedCart(current);
                 setSharedCart(current);
                 setCodeInput(current.joinCode || '');
             }
@@ -328,6 +339,12 @@ const SharedCartPage = () => {
 
     const availableAddons = useMemo(() => {
         return (activeCategory?.availableAddons || []).filter((addon) => addon.available !== false);
+    }, [activeCategory]);
+
+    useEffect(() => {
+        const firstFood = activeFoods.find((food) => food.available !== false) || activeFoods[0];
+        setSelectedFoodId(firstFood?.foodId ? String(firstFood.foodId) : '');
+        setSelectedAddonIds([]);
     }, [activeCategory]);
 
     const handleCategoryChange = (categoryId) => {
@@ -425,7 +442,8 @@ const SharedCartPage = () => {
                 {error && <div className="shared-cart-alert shared-cart-alert-error">{error}</div>}
                 {message && <div className="shared-cart-alert shared-cart-alert-success">{message}</div>}
 
-                <div className="shared-cart-grid">
+                {!hasActiveCurrentSharedCart && (
+                    <div className="shared-cart-grid">
                     <motion.section className="shared-cart-card" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
                         <h2>Create shared cart</h2>
                         <p>Start a shared cart for one restaurant and invite others using a join code.</p>
@@ -489,7 +507,8 @@ const SharedCartPage = () => {
                             </button>
                         </div>
                     </motion.section>
-                </div>
+                    </div>
+                )}
 
                 {sharedCart && (
                     <motion.section className="shared-cart-details" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -498,13 +517,6 @@ const SharedCartPage = () => {
                             <div className="shared-cart-code-row">
                                 <span>Code: <strong>{sharedCart.joinCode}</strong></span>
                                 <button className="shared-cart-btn shared-cart-btn-outline shared-cart-btn-sm" onClick={handleCopyCode}>Copy</button>
-                                <button
-                                    className="shared-cart-btn shared-cart-btn-outline shared-cart-btn-sm"
-                                    onClick={handleManualRefresh}
-                                    disabled={working}
-                                >
-                                    {working ? 'Refreshing...' : 'Refresh'}
-                                </button>
                             </div>
                         </div>
 
@@ -518,6 +530,13 @@ const SharedCartPage = () => {
                                 <strong>Rs {Number(sharedCart.totalPrice || 0).toFixed(2)}</strong>
                             </div>
                             <div className="shared-cart-stat-box">
+                                <button
+                                    className="shared-cart-btn shared-cart-btn-outline shared-cart-btn-sm"
+                                    onClick={handleManualRefresh}
+                                    disabled={working}
+                                >
+                                    {working ? 'Refreshing...' : 'Refresh'}
+                                </button>
                                 <span>Paid</span>
                                 <strong>Rs {Number(sharedCart.amountPaid || 0).toFixed(2)}</strong>
                             </div>
@@ -532,10 +551,15 @@ const SharedCartPage = () => {
                             Note: You can remove only the items added from your own member cart.
                         </p>
                         <div className="shared-cart-members-list">
-                            {(sharedCart.memberList || []).map((member) => (
+                            {(sharedCart.memberList || []).map((member) => {
+                                const isHostMember = String(member?.user?.userId || '') === String(sharedCart?.host?.userId || '');
+                                return (
                                 <div className="shared-cart-member-card" key={member.memberId}>
                                     <div className="shared-cart-member-header">
-                                        <strong>{getMemberName(member)}</strong>
+                                        <div className="shared-cart-member-name-row">
+                                            <strong>{getMemberName(member)}</strong>
+                                            {isHostMember && <span className="shared-cart-host-badge">Host</span>}
+                                        </div>
                                         <span>Contributed: Rs {Number(member.walletContribution || 0).toFixed(2)}</span>
                                     </div>
                                     {!member.cart?.cartItems?.length ? (
@@ -550,7 +574,7 @@ const SharedCartPage = () => {
                                                     <button
                                                         className="shared-cart-btn shared-cart-btn-outline shared-cart-btn-sm"
                                                         onClick={() => handleRemoveItem(item.cartItemId)}
-                                                        disabled={(!viewerIsMember && !viewerIsHost) || removingItemId === item.cartItemId}
+                                                        disabled={!viewerIsMember || removingItemId === item.cartItemId}
                                                     >
                                                         {removingItemId === item.cartItemId ? 'Removing...' : 'Remove'}
                                                     </button>
@@ -559,10 +583,11 @@ const SharedCartPage = () => {
                                         </ul>
                                     )}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
-                        {sharedCart.isActive && (viewerIsMember || viewerIsHost) && (
+                        {sharedCart.isActive && viewerIsMember && (
                             <div className="shared-cart-action-panel">
                                 <h3>Add items to shared cart</h3>
                                 {menuLoading ? (

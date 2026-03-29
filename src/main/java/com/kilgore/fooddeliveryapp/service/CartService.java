@@ -36,14 +36,11 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final PricingService pricingService;
     private final UserAuthorization userAuthorization;
-    private final SharedCartRepository sharedCartRepository;
     private final SharedCartMemberRepository sharedCartMemberRepository;
 
     public CartService(CartRepository cartRepository, UserRepository userRepository,
                        FoodRepository foodRepository, AddonRepository addonRepository,
-                       CartItemRepository cartItemRepository, PricingService pricingService,
-                       UserAuthorization userAuthorization, SharedCartRepository sharedCartRepository,
-                       SharedCartMemberRepository sharedCartMemberRepository) {
+                       CartItemRepository cartItemRepository, PricingService pricingService, UserAuthorization userAuthorization, SharedCartMemberRepository sharedCartMemberRepository) {
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.foodRepository = foodRepository;
@@ -51,7 +48,6 @@ public class CartService {
         this.cartItemRepository = cartItemRepository;
         this.pricingService = pricingService;
         this.userAuthorization = userAuthorization;
-        this.sharedCartRepository = sharedCartRepository;
         this.sharedCartMemberRepository = sharedCartMemberRepository;
     }
 
@@ -64,7 +60,6 @@ public class CartService {
 
         User user = userAuthorization.authorizeUser();
         Cart cart = getWorkingCartForUser(user);
-
 
         if (cart == null) {
             cart = new Cart();
@@ -95,7 +90,6 @@ public class CartService {
         }
 
         addOrMergeCartItem(cart, food, addonList,  request);
-        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, false);
     }
@@ -105,7 +99,7 @@ public class CartService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByEmail(authentication.getName());
 
-        Cart cart = getWorkingCartForUser(user);
+        Cart cart = cartRepository.findByUser(user);
 
         boolean priceUpdated = false;
         if (cart != null) {
@@ -127,7 +121,6 @@ public class CartService {
 
         pricingService.updateCartTotal(cart);
         cartItemRepository.save(item);
-        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, true);
     }
@@ -139,7 +132,6 @@ public class CartService {
 
         cart.getItems().remove(item);
         pricingService.updateCartTotal(cart);
-        updateSharedCartTotalPriceIfNeeded(cart);
 
         return createCartResponse(cart, true);
     }
@@ -150,7 +142,6 @@ public class CartService {
 
         cart.getItems().clear();
         pricingService.updateCartTotal(cart);
-        updateSharedCartTotalPriceIfNeeded(cart);
 
         return "Cart has been cleared";
     }
@@ -183,7 +174,7 @@ public class CartService {
         String username = authentication.getName();
         User user = userRepository.findByEmail(username);
 
-        Cart cart = getWorkingCartForUser(user);
+        Cart cart = cartRepository.findByUser(user);
         if (cart == null) {
             throw new EntityNotFoundException("Cart not found");
         }
@@ -357,21 +348,6 @@ public class CartService {
                 .sum();
     }
 
-    private void updateSharedCartTotalPriceIfNeeded(Cart cart) {
-        if (cart == null || cart.getSharedCart() == null || !cart.getSharedCart().isActive()) return;
-
-        SharedCart sharedCart = cart.getSharedCart();
-        BigDecimal total = sharedCart.getMemberList().stream()
-                .filter(SharedCartMember::isActive)
-                .map(member -> member.getCart() != null && member.getCart().getTotalPrice() != null
-                        ? member.getCart().getTotalPrice()
-                        : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        sharedCart.setTotalPrice(total);
-        sharedCartRepository.save(sharedCart);
-    }
-
     private Cart getWorkingCartForUser(User user) {
         SharedCartMember activeMembership = sharedCartMemberRepository.findActiveMemberByUserId(user.getUserId());
         if (activeMembership != null && activeMembership.getCart() != null) {
@@ -379,5 +355,4 @@ public class CartService {
         }
         return cartRepository.findByUser(user);
     }
-
 }

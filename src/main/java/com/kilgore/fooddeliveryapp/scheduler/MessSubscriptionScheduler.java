@@ -64,7 +64,7 @@ public class MessSubscriptionScheduler {
 
     //-----------------------------------------Subscriptions Status Handling--------------------------------------------
 
-    @Scheduled(cron = "0 0 1 * * *")
+    @Scheduled(cron = "0 05 12 * * *")
     public void settingSubscriptionInActive() {
         LocalDate today = LocalDate.now();
 

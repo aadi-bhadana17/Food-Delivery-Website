@@ -79,7 +79,7 @@ public class SharedCartService {
 
         Cart cart = cartRepository.findByUser(user);
         if (cart != null) {
-            if (cart.getRestaurant() != null && !cart.getRestaurant().equals(request.getRestaurant()) && !cart.getItems().isEmpty()) {
+            if (cart.getRestaurant() != null && !cart.getRestaurant().getRestaurantId().equals(request.getRestaurant().getRestaurantId()) && !cart.getItems().isEmpty()) {
                 throw new EntityMisMatchAssociationException("Your current cart belongs to another restaurant. Please clear it before creating a shared cart.");
             }
         } else {
@@ -95,22 +95,11 @@ public class SharedCartService {
 
         SharedCartMember member = new SharedCartMember();
         member.setUser(user);
-        member.setSharedCart(sharedCart); // member will automatically get add to memberList by JPA
+        member.setSharedCart(sharedCart);
         member.setCart(cart);
         sharedCartMemberRepository.save(member);
 
         return mapToSharedCartResponse(sharedCart, user);
-    }
-
-    public SharedCartResponse getSharedCart() {
-        User user =  userAuthorization.authorizeUser();
-
-        SharedCart sharedCart = sharedCartRepository.findByHost(user);
-        if(sharedCart != null && sharedCart.isActive())
-            return mapToSharedCartResponse(sharedCart, user);
-
-        throw new EntityNotFoundException("You don't have any shared cart yet, " +
-                "create one by choosing restaurant and payment process");
     }
 
     public SharedCartResponse getCurrentSharedCart() {
@@ -199,7 +188,7 @@ public class SharedCartService {
         if(!food.getRestaurant().equals(cart.getRestaurant()))
             throw new EntityMisMatchAssociationException("The food you are trying to add does not belong to the restaurant of this shared cart.");
 
-        cartService.addOrMergeCartItem(cart, food, addonList,  request);
+        cartService.addOrMergeCartItem(cart, food, addonList, request);
 
         cartRepository.save(cart);
 
@@ -275,9 +264,6 @@ public class SharedCartService {
         Address address = addressRepository.findById(request.getAddressId())
                 .orElseThrow(() -> new EntityNotFoundException("Address not found with the provided id."));
 
-        // Keep checkout in sync even when members changed items via normal cart endpoints.
-        updateSharedCartTotalPrice(sharedCart);
-
         BigDecimal remainingAmount = sharedCart.getTotalPrice().subtract(sharedCart.getAmountPaid());
 
         if(user.getWalletBalance().compareTo(remainingAmount) < 0)
@@ -313,7 +299,6 @@ public class SharedCartService {
         // removing members from shared cart after placing the order
         sharedCart.getMemberList().forEach(member -> {
             member.getCart().getItems().clear();
-            member.getCart().setSharedCart(null);
             member.setActive(false);
             cartRepository.save(member.getCart());
         });
@@ -327,9 +312,6 @@ public class SharedCartService {
 
 
     private SharedCartResponse mapToSharedCartResponse(SharedCart sharedCart, User viewer) {
-        SharedCartMember activeMembership = sharedCartMemberRepository.findActiveMemberByUserId(viewer.getUserId());
-        boolean viewerIsMember = activeMembership != null
-                && activeMembership.getSharedCart().getSharedCartId().equals(sharedCart.getSharedCartId());
         boolean viewerIsHost = sharedCart.getHost().getUserId().equals(viewer.getUserId());
 
         List<SharedCartMember> activeMembers = sharedCart.getMemberList().stream()
@@ -352,7 +334,7 @@ public class SharedCartService {
                 sharedCart.getAmountPaid(),
                 sharedCart.isHostPaysAll(),
                 sharedCart.isActive(),
-                viewerIsMember,
+                !viewerIsHost,
                 viewerIsHost
         );
     }
@@ -386,4 +368,5 @@ public class SharedCartService {
         );
         sharedCartRepository.save(sharedCart);
     }
+
 }
